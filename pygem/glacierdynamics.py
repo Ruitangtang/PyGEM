@@ -455,8 +455,8 @@ class MassRedistributionCurveModel(FlowlineModel):
             self.mb_model.glac_bin_width_annual[:,year+1] = fl.widths_m
             self.mb_model.glac_wide_area_annual[year+1] = glacier_area.sum()
             self.mb_model.glac_wide_volume_annual[year+1] = (fl.section * fl.dx_meter).sum()
-     
-            
+
+
     #%% ----- Calving Law ----------
 def fa_sermeq_speed_law(model,last_above_wl, v_scaling=1, verbose=False,
                      tau0=150e3, yield_type='constant', mu=0.01,
@@ -809,13 +809,13 @@ def fa_sermeq_speed_law(model,last_above_wl, v_scaling=1, verbose=False,
                     h = fl.thick[last_above_wl]
                     d = h - (fl.surface_h[last_above_wl] - self.water_level)
                     k = self.calving_k
-                    q_calving = k * d * h * fl.widths_m[last_above_wl]
+                    #q_calving = k * d * h * fl.widths_m[last_above_wl]
                     # Sermeq calving law
-
-
-
-
-
+                    print('****************Sermeq claving law start********************')
+                    s_fa = fa_sermeq_speed_law(self,last_above_wl,v_scaling = 1, verbose = False,tau0 = 150e3,
+                                        yield_type = 'constant', mu = 0.01,trim_profile = 0)
+                    q_calving = s_fa ['Sermeq_fa']*s_fa['Thickness_termi']*s_fa['Width_termi']/cfg.SEC_IN_YEAR
+                    print('****************Sermeq claving law end successfully********************')
                     
                     # Max frontal ablation is removing all bins with bed below water level
                     glac_idx_bsl = np.where((fl.thick > 0) & (fl.bed_h < self.water_level))[0]
