@@ -812,7 +812,7 @@ def fa_sermeq_speed_law(model,last_above_wl, v_scaling=1, verbose=False,
                     #q_calving = k * d * h * fl.widths_m[last_above_wl]
                     # Sermeq calving law
                     print('****************Sermeq claving law start********************')
-                    s_fa = fa_sermeq_speed_law(self,last_above_wl,v_scaling = 1, verbose = False,tau0 = 150e3,
+                    s_fa = fa_sermeq_speed_law(self,last_above_wl,v_scaling = 1, verbose = False,tau0 = self.calving_k,
                                         yield_type = 'constant', mu = 0.01,trim_profile = 0)
                     q_calving = s_fa ['Sermeq_fa']*s_fa['Thickness_termi']*s_fa['Width_termi']/cfg.SEC_IN_YEAR
                     print('****************Sermeq claving law end successfully********************')
