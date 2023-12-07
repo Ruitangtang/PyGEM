@@ -297,9 +297,12 @@ def selectglaciersrgitable(glac_no=None, rgi_regionsO1=None, rgi_regionsO2='all'
 
     # Create an empty dataframe
     rgi_regionsO1 = sorted(rgi_regionsO1)
+    print('glc_no',glac_no)
+    print('rfp',os.listdir(rgi_fp))
+    print('rgi_glc_num',rgi_glac_number)
     glacier_table = pd.DataFrame()
     for region in rgi_regionsO1:
-
+        print(region)
         if glac_no is not None:
             rgi_glac_number = glac_no_byregion[region]
 
@@ -308,6 +311,7 @@ def selectglaciersrgitable(glac_no=None, rgi_regionsO1=None, rgi_regionsO2='all'
         for i in os.listdir(rgi_fp):
             if i.startswith(str(region).zfill(2)) and i.endswith('.csv'):
                 rgi_fn = i
+            print('regs:',i)
         try:
             csv_regionO1 = pd.read_csv(rgi_fp + rgi_fn)
         except:
@@ -318,8 +322,10 @@ def selectglaciersrgitable(glac_no=None, rgi_regionsO1=None, rgi_regionsO2='all'
             print("All glaciers within region(s) %s are included in this model run." % (region))
             if glacier_table.empty:
                 glacier_table = csv_regionO1
+                print('..1...',glacier_table.shape[0])
             else:
                 glacier_table = pd.concat([glacier_table, csv_regionO1], axis=0)
+                print('..2...',glacier_table.shape[0])
         elif rgi_regionsO2 != 'all' and rgi_glac_number == 'all':
             print("All glaciers within subregion(s) %s in region %s are included in this model run." %
                   (rgi_regionsO2, region))
@@ -347,6 +353,7 @@ def selectglaciersrgitable(glac_no=None, rgi_regionsO1=None, rgi_regionsO2='all'
                                            axis=0))
                     
     glacier_table = glacier_table.copy()
+    print('num glc in the region:',glacier_table.shape[0])
     # reset the index so that it is in sequential order (0, 1, 2, etc.)
     glacier_table.reset_index(inplace=True)
     # drop connectivity 2 for Greenland and Antarctica
@@ -393,6 +400,7 @@ def selectglaciersrgitable(glac_no=None, rgi_regionsO1=None, rgi_regionsO2='all'
         termtype_values.append(5)
     if include_laketerm:
         termtype_values.append(2)
+    #print(glacier.columns.tolist())
     glacier_table = glacier_table.loc[glacier_table['TermType'].isin(termtype_values)]
     glacier_table.reset_index(inplace=True, drop=True)
     # Glacier number with no trailing zeros
