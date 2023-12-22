@@ -111,6 +111,7 @@ def mb_df_to_gdir(gdir, mb_dataset='Hugonnet2020'):
                   'nyears': nyears}
         
         pkl_fn = gdir.get_filepath('mb_obs')
+        print("the path of 'mb_obs'in gdir is :",pkl_fn)
         with open(pkl_fn, 'wb') as f:
             pickle.dump(mbdata, f)
 
