@@ -215,7 +215,12 @@ class PyGEMMassBalance(MassBalanceModel):
             icethickness_t0[fl_widths_m > 0] = fl_section[fl_widths_m > 0] / fl_widths_m[fl_widths_m > 0]
         else:
             icethickness_t0 = None
-
+        print('******************** attributes of the flowline at the time t0 ******************** ')
+        print('glacier_area_initial is:',glacier_area_initial)
+        print('glacier_area_t0 is:',glacier_area_t0)
+        print('the fl_widths_m at t0 is:',fl_widths_m)
+        print('the fl_section area at t0 is:',fl_section)
+        print('the ice thickness at t0 is:',icethickness_t0)
         # Quality control: ensure you only have glacier area where there is ice
         if icethickness_t0 is not None:
             glacier_area_t0[icethickness_t0 == 0] = 0
@@ -225,10 +230,11 @@ class PyGEMMassBalance(MassBalanceModel):
         
         # Glacier indices
         glac_idx_t0 = glacier_area_t0.nonzero()[0]
+        print('the indices of glacier nonzero at t0 is:',glac_idx_t0)
         
         nbins = heights.shape[0]
         nmonths = self.glacier_gcm_temp.shape[0]
-
+        print('nbins is',nbins,'nmonths is :',nmonths)
         # Local variables
         bin_precsnow = np.zeros((nbins,nmonths))
 
@@ -251,6 +257,7 @@ class PyGEMMassBalance(MassBalanceModel):
             if option_areaconstant == False:
                 self.offglac_bin_area_annual[:,year] = glacier_area_initial - glacier_area_t0
                 offglac_idx = np.where(self.offglac_bin_area_annual[:,year] > 0)[0]
+                print('****************** off glacier idx is*******************',offglac_idx)
 
             # Functions currently set up for monthly timestep
             #  only compute mass balance while glacier exists
