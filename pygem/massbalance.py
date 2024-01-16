@@ -182,8 +182,9 @@ class PyGEMMassBalance(MassBalanceModel):
 
     def get_monthly_mb(self, heights, year=None, fls=None, fl_id=None,
                       debug=False, option_areaconstant=False):
+        print("year in get_monthly_mb is :",year)
         year_floor=np.floor(year)
-        month=year-year_floor
+        month=year-int(year_floor)
 
         mb=self.get_annual_mb(heights=heights, year=year_floor, fls=fls, fl_id=fl_id,
                       debug=debug, option_areaconstant=False, year_month=month)
@@ -646,8 +647,8 @@ class PyGEMMassBalance(MassBalanceModel):
             mb = (self.glac_bin_massbalclim[:,12*year:12*(year+1)].sum(1)
                   * pygem_prms.density_water / pygem_prms.density_ice / seconds_in_year)
         else:
-            seconds_in_month = self.dayspermonth[12*year+int(year_month*12)]* 24 * 3600
-            mb = (self.glac_bin_massbalclim[:,12*year+int(year_month*12)]
+            seconds_in_month = self.dayspermonth[12*year+round(year_month*12)]* 24 * 3600
+            mb = (self.glac_bin_massbalclim[:,12*year+round(year_month*12)]
                   * pygem_prms.density_water / pygem_prms.density_ice
                   /seconds_in_month)
             print("index for mb")
@@ -857,15 +858,18 @@ class PyGEMMassBalance(MassBalanceModel):
         vol_change_annual_mbmod = (self.glac_wide_massbaltotal.reshape(-1,12).sum(1) * 
                                    pygem_prms.density_water / pygem_prms.density_ice)
         vol_change_annual_diag = np.zeros(vol_change_annual_mbmod.shape)
+        #%% Dynamic running step
         # if the dynamic step is monthly, the volume is monthly, need to be calculated as annual
         Dynamic_step_Monthly =True
         if Dynamic_step_Monthly :
-            calving_m3_month_ice = diag.calving_m3.values[1:] - diag.calving_m3.values[0:-1] 
-            calving_m3_annual_ice = calving_m3_month_ice.reshape(-1,12).sum(1)
-            vol_change_annual_diag = calving_m3_annual_ice
+            volume_m3_month_ice = diag.volume_m3.values[1:] - diag.volume_m3.values[0:-1] 
+            volume_m3_annual_ice = volume_m3_month_ice.reshape(-1,12).sum(1)
+            vol_change_annual_diag = volume_m3_annual_ice
+            print("diag.volume_m3 :",diag.volume_m3)
+            print("vol_change_annual_diag :",vol_change_annual_diag)
         else:
             vol_change_annual_diag[0:diag.volume_m3.values[1:].shape[0]] = diag.volume_m3.values[1:] - diag.volume_m3.values[:-1]
-        
+        #%%
         vol_change_annual_dif = vol_change_annual_diag - vol_change_annual_mbmod
 
         # Reduce glacier melt by the difference
