@@ -48,6 +48,10 @@ class PyGEMMassBalance(MassBalanceModel):
         hindcast : Boolean
             switch to run the model in reverse or not (may be irrelevant after converting to OGGM's setup)
         """
+
+        print("PYGEM: flowlines")
+        print(type(fls).__name__)
+
         if debug:
             print('\n\nDEBUGGING MASS BALANCE FUNCTION\n\n')
         self.debug_refreeze = debug_refreeze
