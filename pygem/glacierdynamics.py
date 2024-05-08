@@ -167,11 +167,7 @@ def fa_sermeq_speed_law(model,last_above_wl, v_scaling=1, verbose=False,
         else:
             D = 0
         return (2 * yield_strength / (RHO_ICE * G)) + np.sqrt(
-<<<<<<< HEAD
             (RHO_SEA * (D ** 2) / RHO_ICE) + ((2 * yield_strength / (RHO_ICE * G)) ** 2))
-=======
-            (RHO_SEA * (D ** 2) / RHO_ICE) + ((2 * yield_strength / (RHO_ICE * G)) ** 2))
->>>>>>> cc18294 (scale the calving-k(yield strength))
         # TODO: Check on exponent on last term.  In Ultee & Bassis 2016, this is squared, but in Ultee & Bassis 2020 supplement, it isn't.
 
     # ---------------------------------------------------------------------------
