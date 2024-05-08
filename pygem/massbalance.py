@@ -7,6 +7,7 @@ Created on Mon Feb  3 14:00:14 2020
 """
 # External libraries
 import numpy as np
+import traceback
 # Local libraries
 from oggm.core.massbalance import MassBalanceModel
 import pygem_input as pygem_prms
@@ -49,7 +50,7 @@ class PyGEMMassBalance(MassBalanceModel):
             switch to run the model in reverse or not (may be irrelevant after converting to OGGM's setup)
         """
 
-        print("PYGEM: flowlines")
+        print("the input flowlines in PyGEMMassBalance Model is: ")
         print(type(fls).__name__)
 
         if debug:
@@ -197,7 +198,7 @@ class PyGEMMassBalance(MassBalanceModel):
         
         return mb
 
-    def get_annual_mb(self, heights, year=None, fls=None, fl_id=None,
+    def get_annual_mb(self, heights, year=None, fls = None, fl_id = 0,
                       debug=False, option_areaconstant=False, year_month=None):
         """FIXED FORMAT FOR THE FLOWLINE MODEL
 
@@ -215,486 +216,512 @@ class PyGEMMassBalance(MassBalanceModel):
         mb : np.array
             mass balance for each bin [m ice per second]
         """          
-        year = int(year)
-
-        if self.repeat_period:
-            year = year % (pygem_prms.gcm_endyear - pygem_prms.gcm_startyear)
-
-        fl = fls[fl_id]
-        np.testing.assert_allclose(heights, fl.surface_h)
-        glacier_area_t0 = fl.widths_m * fl.dx_meter
-        glacier_area_initial = self.glacier_area_initial
-        fl_widths_m = getattr(fl, 'widths_m', None)
-        fl_section = getattr(fl,'section',None)
-        # Ice thickness (average)
-        if fl_section is not None and fl_widths_m is not None:
-            icethickness_t0 = np.zeros(fl_section.shape)
-            icethickness_t0[fl_widths_m > 0] = fl_section[fl_widths_m > 0] / fl_widths_m[fl_widths_m > 0]
-        else:
-            icethickness_t0 = None
-        print('******************** attributes of the flowline at the time t0 ******************** ')
-        print('glacier_area_initial is:',glacier_area_initial)
-        print('glacier_area_t0 is:',glacier_area_t0)
-        print('the fl_widths_m at t0 is:',fl_widths_m)
-        print('the fl_section area at t0 is:',fl_section)
-        print('the ice thickness at t0 is:',icethickness_t0)
-        # Quality control: ensure you only have glacier area where there is ice
-        if icethickness_t0 is not None:
-            glacier_area_t0[icethickness_t0 == 0] = 0
+        #year = int(year)
+        year=int(year)
+        print("Year is: ", year, "Month is:", year_month)
+        try:
+            if self.repeat_period:
+                year = year % (pygem_prms.gcm_endyear - pygem_prms.gcm_startyear)
+            print("######################### In PyGEMMassBalance get annual mb")
+            print("fl_id is ",fl_id)
+            print("fls is ",fls)
+            print("#########################")
+            # try:
+            #     fls = self.gdir.read_pickle('inversion_flowlines')
+            #     print("######################### 2")
+            #     print("fl_id is ",fl_id)
+            #     print("fls is ",fls)
+            #     print("######################### 2")
+            # except:
+            #     print("**************Something is wrong with the fls read**************")
+            #     print(traceback.format_exc())
+                    
+            if (fls is not None) and (fl_id is not None):
+                print("fls and fl_id are not None")
+                try:
+                    fl = fls[fl_id]
+                except:
+                    print(traceback.format_exc())
+            else:
+                print("Please check the fls and fl_id, they should not be None") 
+                print(traceback.format_exc())
+            np.testing.assert_allclose(heights, fl.surface_h)
+            glacier_area_t0 = fl.widths_m * fl.dx_meter
+            glacier_area_initial = self.glacier_area_initial
+            fl_widths_m = getattr(fl, 'widths_m', None)
+            fl_section = getattr(fl,'section',None)
+            # Ice thickness (average)
+            if fl_section is not None and fl_widths_m is not None:
+                icethickness_t0 = np.zeros(fl_section.shape)
+                icethickness_t0[fl_widths_m > 0] = fl_section[fl_widths_m > 0] / fl_widths_m[fl_widths_m > 0]
+            else:
+                icethickness_t0 = None
+            #print('******************** attributes of the flowline at the time t0 ******************** ')
+            #print('glacier_area_initial is:',glacier_area_initial)
+            #print('glacier_area_t0 is:',glacier_area_t0)
+            #print('the fl_widths_m at t0 is:',fl_widths_m)
+            #print('the fl_section area at t0 is:',fl_section)
+            #print('the ice thickness at t0 is:',icethickness_t0)
+            # Quality control: ensure you only have glacier area where there is ice
+            if icethickness_t0 is not None:
+                glacier_area_t0[icethickness_t0 == 0] = 0
+                
+            # Record ice thickness
+            self.glac_bin_icethickness_annual[:,year] = icethickness_t0
             
-        # Record ice thickness
-        self.glac_bin_icethickness_annual[:,year] = icethickness_t0
-        
-        # Glacier indices
-        glac_idx_t0 = glacier_area_t0.nonzero()[0]
-        print('the indices of glacier nonzero at t0 is:',glac_idx_t0)
-        
-        nbins = heights.shape[0]
-        nmonths = self.glacier_gcm_temp.shape[0]
-        print('nbins is',nbins,'nmonths is :',nmonths)
-        # Local variables
-        bin_precsnow = np.zeros((nbins,nmonths))
+            # Glacier indices
+            glac_idx_t0 = glacier_area_t0.nonzero()[0]
+            print('the indices of glacier nonzero at t0 is:',glac_idx_t0)
+            
+            nbins = heights.shape[0]
+            nmonths = self.glacier_gcm_temp.shape[0]
+            print('nbins is',nbins,'nmonths is :',nmonths)
+            # Local variables
+            bin_precsnow = np.zeros((nbins,nmonths))
 
-        # Refreezing specific layers
-        if pygem_prms.option_refreezing == 'HH2015' and year == 0:
-            self.te_rf[:,:,0] = 0     # layer temp of each elev bin for present time step
-            self.tl_rf[:,:,0] = 0     # layer temp of each elev bin for previous time step
-        elif pygem_prms.option_refreezing == 'Woodward':
-            refreeze_potential = np.zeros(nbins)
+            # Refreezing specific layers
+            if pygem_prms.option_refreezing == 'HH2015' and year == 0:
+                self.te_rf[:,:,0] = 0     # layer temp of each elev bin for present time step
+                self.tl_rf[:,:,0] = 0     # layer temp of each elev bin for previous time step
+            elif pygem_prms.option_refreezing == 'Woodward':
+                refreeze_potential = np.zeros(nbins)
 
-        if self.glacier_area_initial.sum() > 0:
-#        if len(glac_idx_t0) > 0:
-    
-            # Surface type [0=off-glacier, 1=ice, 2=snow, 3=firn, 4=debris]
-            if year == 0:
-                self.surfacetype, self.firnline_idx = self._surfacetypebinsinitial(self.heights)
-            self.glac_bin_surfacetype_annual[:,year] = self.surfacetype
+            if self.glacier_area_initial.sum() > 0:
+        #        if len(glac_idx_t0) > 0:
 
-            # Off-glacier area and indices
-            if option_areaconstant == False:
-                self.offglac_bin_area_annual[:,year] = glacier_area_initial - glacier_area_t0
-                offglac_idx = np.where(self.offglac_bin_area_annual[:,year] > 0)[0]
-                print('****************** off glacier idx is*******************',offglac_idx)
+                # Surface type [0=off-glacier, 1=ice, 2=snow, 3=firn, 4=debris]
+                if year == 0:
+                    self.surfacetype, self.firnline_idx = self._surfacetypebinsinitial(self.heights)
+                self.glac_bin_surfacetype_annual[:,year] = self.surfacetype
 
-            # Functions currently set up for monthly timestep
-            #  only compute mass balance while glacier exists
-            if (pygem_prms.timestep == 'monthly'):
-#            if (pygem_prms.timestep == 'monthly') and (glac_idx_t0.shape[0] != 0):
+                # Off-glacier area and indices
+                if option_areaconstant == False:
+                    self.offglac_bin_area_annual[:,year] = glacier_area_initial - glacier_area_t0
+                    offglac_idx = np.where(self.offglac_bin_area_annual[:,year] > 0)[0]
+                    print('****************** off glacier idx is*******************',offglac_idx)
 
-                # AIR TEMPERATURE: Downscale the gcm temperature [deg C] to each bin
-                if pygem_prms.option_temp2bins == 1:
-                    # Downscale using gcm and glacier lapse rates
-                    #  T_bin = T_gcm + lr_gcm * (z_ref - z_gcm) + lr_glac * (z_bin - z_ref) + tempchange               
-                    self.bin_temp[:,12*year:12*(year+1)] = (self.glacier_gcm_temp[12*year:12*(year+1)] +
-                         self.glacier_gcm_lrgcm[12*year:12*(year+1)] *
-                         (self.glacier_rgi_table.loc[pygem_prms.option_elev_ref_downscale] - self.glacier_gcm_elev) +
-                         self.glacier_gcm_lrglac[12*year:12*(year+1)] * (heights -
-                         self.glacier_rgi_table.loc[pygem_prms.option_elev_ref_downscale])[:, np.newaxis] +
-                                                self.modelprms['tbias'])
+                # Functions currently set up for monthly timestep
+                #  only compute mass balance while glacier exists
+                if (pygem_prms.timestep == 'monthly'):
+        #            if (pygem_prms.timestep == 'monthly') and (glac_idx_t0.shape[0] != 0):
 
-                # PRECIPITATION/ACCUMULATION: Downscale the precipitation (liquid and solid) to each bin
-                if pygem_prms.option_prec2bins == 1:
-                    # Precipitation using precipitation factor and precipitation gradient
-                    #  P_bin = P_gcm * prec_factor * (1 + prec_grad * (z_bin - z_ref))
-                    bin_precsnow[:,12*year:12*(year+1)] = (self.glacier_gcm_prec[12*year:12*(year+1)] *
-                            self.modelprms['kp'] * (1 + self.modelprms['precgrad'] * (heights -
-                            self.glacier_rgi_table.loc[pygem_prms.option_elev_ref_downscale]))[:,np.newaxis])
-                # Option to adjust prec of uppermost 25% of glacier for wind erosion and reduced moisture content
-                if pygem_prms.option_preclimit == 1:
-                    # Elevation range based on all flowlines
-                    raw_min_elev = []
-                    raw_max_elev = []
-                    if len(fl.surface_h[fl.widths_m > 0]):
-                        raw_min_elev.append(fl.surface_h[fl.widths_m > 0].min())
-                        raw_max_elev.append(fl.surface_h[fl.widths_m > 0].max())
-                    elev_range = np.max(raw_max_elev) - np.min(raw_min_elev)
-                    elev_75 = np.min(raw_min_elev) + 0.75 * (elev_range)
+                    # AIR TEMPERATURE: Downscale the gcm temperature [deg C] to each bin
+                    if pygem_prms.option_temp2bins == 1:
+                        # Downscale using gcm and glacier lapse rates
+                        #  T_bin = T_gcm + lr_gcm * (z_ref - z_gcm) + lr_glac * (z_bin - z_ref) + tempchange               
+                        self.bin_temp[:,12*year:12*(year+1)] = (self.glacier_gcm_temp[12*year:12*(year+1)] +
+                                self.glacier_gcm_lrgcm[12*year:12*(year+1)] *
+                                (self.glacier_rgi_table.loc[pygem_prms.option_elev_ref_downscale] - self.glacier_gcm_elev) +
+                                self.glacier_gcm_lrglac[12*year:12*(year+1)] * (heights -
+                                self.glacier_rgi_table.loc[pygem_prms.option_elev_ref_downscale])[:, np.newaxis] +
+                                                    self.modelprms['tbias'])
 
-                    # If elevation range > 1000 m, apply corrections to uppermost 25% of glacier (Huss and Hock, 2015)
-                    if elev_range > 1000:
-                        # Indices of upper 25%
-                        glac_idx_upper25 = glac_idx_t0[heights[glac_idx_t0] >= elev_75]
-                        # Exponential decay according to elevation difference from the 75% elevation
-                        #  prec_upper25 = prec * exp(-(elev_i - elev_75%)/(elev_max- - elev_75%))
-                        # height at 75% of the elevation
-                        height_75 = heights[glac_idx_upper25].min()
-                        glac_idx_75 = np.where(heights == height_75)[0][0]
-                        # exponential decay
-                        bin_precsnow[glac_idx_upper25,12*year:12*(year+1)] = (
-                                bin_precsnow[glac_idx_75,12*year:12*(year+1)] *
-                                np.exp(-1*(heights[glac_idx_upper25] - height_75) /
-                                       (heights[glac_idx_upper25].max() - heights[glac_idx_upper25].min()))
-                                [:,np.newaxis])
-                        # Precipitation cannot be less than 87.5% of the maximum accumulation elsewhere on the glacier
-                        for month in range(0,12):
-                            bin_precsnow[glac_idx_upper25[(bin_precsnow[glac_idx_upper25,month] < 0.875 *
-                                                           bin_precsnow[glac_idx_t0,month].max()) &
-                                                          (bin_precsnow[glac_idx_upper25,month] != 0)], month] = (
-                                    0.875 * bin_precsnow[glac_idx_t0,month].max())
-                                                                                              
-                # Separate total precipitation into liquid (bin_prec) and solid (bin_acc)
-                if pygem_prms.option_accumulation == 1:
-                    # if temperature above threshold, then rain
-                    (self.bin_prec[:,12*year:12*(year+1)]
-                                  [self.bin_temp[:,12*year:12*(year+1)] > self.modelprms['tsnow_threshold']]) = (
-                        bin_precsnow[:,12*year:12*(year+1)]
-                            [self.bin_temp[:,12*year:12*(year+1)] > self.modelprms['tsnow_threshold']])
-                    # if temperature below threshold, then snow
-                    (self.bin_acc[:,12*year:12*(year+1)]
-                                 [self.bin_temp[:,12*year:12*(year+1)] <= self.modelprms['tsnow_threshold']]) = (
-                        bin_precsnow[:,12*year:12*(year+1)]
-                            [self.bin_temp[:,12*year:12*(year+1)] <= self.modelprms['tsnow_threshold']])
-                elif pygem_prms.option_accumulation == 2:
-                    # if temperature between min/max, then mix of snow/rain using linear relationship between min/max
-                    self.bin_prec[:,12*year:12*(year+1)] = (
-                            (0.5 + (self.bin_temp[:,12*year:12*(year+1)] -
-                             self.modelprms['tsnow_threshold']) / 2) * bin_precsnow[:,12*year:12*(year+1)])
-                    self.bin_acc[:,12*year:12*(year+1)] = (
-                            bin_precsnow[:,12*year:12*(year+1)] - self.bin_prec[:,12*year:12*(year+1)])
-                    # if temperature above maximum threshold, then all rain
-                    (self.bin_prec[:,12*year:12*(year+1)]
-                            [self.bin_temp[:,12*year:12*(year+1)] > self.modelprms['tsnow_threshold'] + 1]) = (
-                        bin_precsnow[:,12*year:12*(year+1)]
-                            [self.bin_temp[:,12*year:12*(year+1)] > self.modelprms['tsnow_threshold'] + 1])
-                    (self.bin_acc[:,12*year:12*(year+1)]
-                        [self.bin_temp[:,12*year:12*(year+1)] > self.modelprms['tsnow_threshold'] + 1]) = 0
-                    # if temperature below minimum threshold, then all snow
-                    (self.bin_acc[:,12*year:12*(year+1)]
-                            [self.bin_temp[:,12*year:12*(year+1)] <= self.modelprms['tsnow_threshold'] - 1]) = (
-                        bin_precsnow[:,12*year:12*(year+1)]
-                            [self.bin_temp[:,12*year:12*(year+1)] <= self.modelprms['tsnow_threshold'] - 1])
-                    (self.bin_prec[:,12*year:12*(year+1)]
-                        [self.bin_temp[:,12*year:12*(year+1)] <= self.modelprms['tsnow_threshold'] - 1]) = 0
+                    # PRECIPITATION/ACCUMULATION: Downscale the precipitation (liquid and solid) to each bin
+                    if pygem_prms.option_prec2bins == 1:
+                        # Precipitation using precipitation factor and precipitation gradient
+                        #  P_bin = P_gcm * prec_factor * (1 + prec_grad * (z_bin - z_ref))
+                        bin_precsnow[:,12*year:12*(year+1)] = (self.glacier_gcm_prec[12*year:12*(year+1)] *
+                                self.modelprms['kp'] * (1 + self.modelprms['precgrad'] * (heights -
+                                self.glacier_rgi_table.loc[pygem_prms.option_elev_ref_downscale]))[:,np.newaxis])
+                    # Option to adjust prec of uppermost 25% of glacier for wind erosion and reduced moisture content
+                    if pygem_prms.option_preclimit == 1:
+                        # Elevation range based on all flowlines
+                        raw_min_elev = []
+                        raw_max_elev = []
+                        if len(fl.surface_h[fl.widths_m > 0]):
+                            raw_min_elev.append(fl.surface_h[fl.widths_m > 0].min())
+                            raw_max_elev.append(fl.surface_h[fl.widths_m > 0].max())
+                        elev_range = np.max(raw_max_elev) - np.min(raw_min_elev)
+                        elev_75 = np.min(raw_min_elev) + 0.75 * (elev_range)
 
-                # ENTER MONTHLY LOOP (monthly loop required since surface type changes)
-                for month in range(0,12):
-                    # Step is the position as a function of year and month, which improves readability
-                    step = 12*year + month
+                        # If elevation range > 1000 m, apply corrections to uppermost 25% of glacier (Huss and Hock, 2015)
+                        if elev_range > 1000:
+                            # Indices of upper 25%
+                            glac_idx_upper25 = glac_idx_t0[heights[glac_idx_t0] >= elev_75]
+                            # Exponential decay according to elevation difference from the 75% elevation
+                            #  prec_upper25 = prec * exp(-(elev_i - elev_75%)/(elev_max- - elev_75%))
+                            # height at 75% of the elevation
+                            height_75 = heights[glac_idx_upper25].min()
+                            glac_idx_75 = np.where(heights == height_75)[0][0]
+                            # exponential decay
+                            bin_precsnow[glac_idx_upper25,12*year:12*(year+1)] = (
+                                    bin_precsnow[glac_idx_75,12*year:12*(year+1)] *
+                                    np.exp(-1*(heights[glac_idx_upper25] - height_75) /
+                                            (heights[glac_idx_upper25].max() - heights[glac_idx_upper25].min()))
+                                    [:,np.newaxis])
+                            # Precipitation cannot be less than 87.5% of the maximum accumulation elsewhere on the glacier
+                            for month in range(0,12):
+                                bin_precsnow[glac_idx_upper25[(bin_precsnow[glac_idx_upper25,month] < 0.875 *
+                                                                bin_precsnow[glac_idx_t0,month].max()) &
+                                                                (bin_precsnow[glac_idx_upper25,month] != 0)], month] = (
+                                        0.875 * bin_precsnow[glac_idx_t0,month].max())
+                                                                                                    
+                    # Separate total precipitation into liquid (bin_prec) and solid (bin_acc)
+                    if pygem_prms.option_accumulation == 1:
+                        # if temperature above threshold, then rain
+                        (self.bin_prec[:,12*year:12*(year+1)]
+                                        [self.bin_temp[:,12*year:12*(year+1)] > self.modelprms['tsnow_threshold']]) = (
+                            bin_precsnow[:,12*year:12*(year+1)]
+                                [self.bin_temp[:,12*year:12*(year+1)] > self.modelprms['tsnow_threshold']])
+                        # if temperature below threshold, then snow
+                        (self.bin_acc[:,12*year:12*(year+1)]
+                                        [self.bin_temp[:,12*year:12*(year+1)] <= self.modelprms['tsnow_threshold']]) = (
+                            bin_precsnow[:,12*year:12*(year+1)]
+                                [self.bin_temp[:,12*year:12*(year+1)] <= self.modelprms['tsnow_threshold']])
+                    elif pygem_prms.option_accumulation == 2:
+                        # if temperature between min/max, then mix of snow/rain using linear relationship between min/max
+                        self.bin_prec[:,12*year:12*(year+1)] = (
+                                (0.5 + (self.bin_temp[:,12*year:12*(year+1)] -
+                                    self.modelprms['tsnow_threshold']) / 2) * bin_precsnow[:,12*year:12*(year+1)])
+                        self.bin_acc[:,12*year:12*(year+1)] = (
+                                bin_precsnow[:,12*year:12*(year+1)] - self.bin_prec[:,12*year:12*(year+1)])
+                        # if temperature above maximum threshold, then all rain
+                        (self.bin_prec[:,12*year:12*(year+1)]
+                                [self.bin_temp[:,12*year:12*(year+1)] > self.modelprms['tsnow_threshold'] + 1]) = (
+                            bin_precsnow[:,12*year:12*(year+1)]
+                                [self.bin_temp[:,12*year:12*(year+1)] > self.modelprms['tsnow_threshold'] + 1])
+                        (self.bin_acc[:,12*year:12*(year+1)]
+                            [self.bin_temp[:,12*year:12*(year+1)] > self.modelprms['tsnow_threshold'] + 1]) = 0
+                        # if temperature below minimum threshold, then all snow
+                        (self.bin_acc[:,12*year:12*(year+1)]
+                                [self.bin_temp[:,12*year:12*(year+1)] <= self.modelprms['tsnow_threshold'] - 1]) = (
+                            bin_precsnow[:,12*year:12*(year+1)]
+                                [self.bin_temp[:,12*year:12*(year+1)] <= self.modelprms['tsnow_threshold'] - 1])
+                        (self.bin_prec[:,12*year:12*(year+1)]
+                            [self.bin_temp[:,12*year:12*(year+1)] <= self.modelprms['tsnow_threshold'] - 1]) = 0
 
-                    # ACCUMULATION, MELT, REFREEZE, AND CLIMATIC MASS BALANCE
-                    # Snowpack [m w.e.] = snow remaining + new snow
-                    if step == 0:
-                        self.bin_snowpack[:,step] = self.bin_acc[:,step]
-                    else:
-                        self.bin_snowpack[:,step] = self.snowpack_remaining[:,step-1] + self.bin_acc[:,step]
+                    # ENTER MONTHLY LOOP (monthly loop required since surface type changes)
+                    for month in range(0,12):
+                        # Step is the position as a function of year and month, which improves readability
+                        step = 12*year + month
 
-                    # MELT [m w.e.]
-                    # energy available for melt [degC day]
-                    if pygem_prms.option_ablation == 1:
-                        # option 1: energy based on monthly temperature
-                        melt_energy_available = self.bin_temp[:,step]*self.dayspermonth[step]
-                        melt_energy_available[melt_energy_available < 0] = 0
-                    elif pygem_prms.option_ablation == 2:
-                        # Seed randomness for repeatability, but base it on step to ensure the daily variability is not
-                        #  the same for every single time step
-                        np.random.seed(step)
-                        # option 2: monthly temperature superimposed with daily temperature variability
-                        # daily temperature variation in each bin for the monthly timestep
-                        bin_tempstd_daily = np.repeat(
-                                np.random.normal(loc=0, scale=self.glacier_gcm_tempstd[step],
-                                                 size=self.dayspermonth[step])
-                                .reshape(1,self.dayspermonth[step]), heights.shape[0], axis=0)
-                        # daily temperature in each bin for the monthly timestep
-                        bin_temp_daily = self.bin_temp[:,step][:,np.newaxis] + bin_tempstd_daily
-                        # remove negative values
-                        bin_temp_daily[bin_temp_daily < 0] = 0
-                        # Energy available for melt [degC day] = sum of daily energy available
-                        melt_energy_available = bin_temp_daily.sum(axis=1)
-                    # SNOW MELT [m w.e.]
-                    self.bin_meltsnow[:,step] = self.surfacetype_ddf_dict[2] * melt_energy_available
-                    # snow melt cannot exceed the snow depth
-                    self.bin_meltsnow[self.bin_meltsnow[:,step] > self.bin_snowpack[:,step], step] = (
-                            self.bin_snowpack[self.bin_meltsnow[:,step] > self.bin_snowpack[:,step], step])
-                    # GLACIER MELT (ice and firn) [m w.e.]
-                    # energy remaining after snow melt [degC day]
-                    melt_energy_available = (
-                            melt_energy_available - self.bin_meltsnow[:,step] / self.surfacetype_ddf_dict[2])
-                    # remove low values of energy available caused by rounding errors in the step above
-                    melt_energy_available[abs(melt_energy_available) < pygem_prms.tolerance] = 0
-                    # DDF based on surface type [m w.e. degC-1 day-1]
-                    for surfacetype_idx in self.surfacetype_ddf_dict:
-                        self.surfacetype_ddf[self.surfacetype == surfacetype_idx] = (
-                                self.surfacetype_ddf_dict[surfacetype_idx])
-                        # Debris enhancement factors in ablation area (debris in accumulation area would submerge)
-                        if surfacetype_idx == 1 and pygem_prms.include_debris:
-                            self.surfacetype_ddf[self.surfacetype == 1] = (
-                                    self.surfacetype_ddf[self.surfacetype == 1] * self.debris_ed[self.surfacetype == 1])
-                    self.bin_meltglac[glac_idx_t0,step] = (
-                            self.surfacetype_ddf[glac_idx_t0] * melt_energy_available[glac_idx_t0])
-                    # TOTAL MELT (snow + glacier)
-                    #  off-glacier need to include melt of refreeze because there are no glacier dynamics,
-                    #  but on-glacier do not need to account for this (simply assume refreeze has same surface type)
-                    self.bin_melt[:,step] = self.bin_meltglac[:,step] + self.bin_meltsnow[:,step]
-
-                    # REFREEZING
-                    if pygem_prms.option_refreezing == 'HH2015':
-                        if step > 0:
-                            self.tl_rf[:,:,step] = self.tl_rf[:,:,step-1]
-                            self.te_rf[:,:,step] = self.te_rf[:,:,step-1]
-
-                        # Refreeze based on heat conduction approach (Huss and Hock 2015)
-                        # refreeze time step (s)
-                        rf_dt = 3600 * 24 * self.dayspermonth[step] / pygem_prms.rf_dsc
-
-                        if pygem_prms.option_rf_limit_meltsnow == 1:
-                            bin_meltlimit = self.bin_meltsnow.copy()
+                        # ACCUMULATION, MELT, REFREEZE, AND CLIMATIC MASS BALANCE
+                        # Snowpack [m w.e.] = snow remaining + new snow
+                        if step == 0:
+                            self.bin_snowpack[:,step] = self.bin_acc[:,step]
                         else:
-                            bin_meltlimit = self.bin_melt.copy()
+                            self.bin_snowpack[:,step] = self.snowpack_remaining[:,step-1] + self.bin_acc[:,step]
 
-                        # Debug lowest bin
-                        if self.debug_refreeze:
-                            gidx_debug = np.where(heights == heights[glac_idx_t0].min())[0]
+                        # MELT [m w.e.]
+                        # energy available for melt [degC day]
+                        if pygem_prms.option_ablation == 1:
+                            # option 1: energy based on monthly temperature
+                            melt_energy_available = self.bin_temp[:,step]*self.dayspermonth[step]
+                            melt_energy_available[melt_energy_available < 0] = 0
+                        elif pygem_prms.option_ablation == 2:
+                            # Seed randomness for repeatability, but base it on step to ensure the daily variability is not
+                            #  the same for every single time step
+                            np.random.seed(step)
+                            # option 2: monthly temperature superimposed with daily temperature variability
+                            # daily temperature variation in each bin for the monthly timestep
+                            bin_tempstd_daily = np.repeat(
+                                    np.random.normal(loc=0, scale=self.glacier_gcm_tempstd[step],
+                                                        size=self.dayspermonth[step])
+                                    .reshape(1,self.dayspermonth[step]), heights.shape[0], axis=0)
+                            # daily temperature in each bin for the monthly timestep
+                            bin_temp_daily = self.bin_temp[:,step][:,np.newaxis] + bin_tempstd_daily
+                            # remove negative values
+                            bin_temp_daily[bin_temp_daily < 0] = 0
+                            # Energy available for melt [degC day] = sum of daily energy available
+                            melt_energy_available = bin_temp_daily.sum(axis=1)
+                        # SNOW MELT [m w.e.]
+                        self.bin_meltsnow[:,step] = self.surfacetype_ddf_dict[2] * melt_energy_available
+                        # snow melt cannot exceed the snow depth
+                        self.bin_meltsnow[self.bin_meltsnow[:,step] > self.bin_snowpack[:,step], step] = (
+                                self.bin_snowpack[self.bin_meltsnow[:,step] > self.bin_snowpack[:,step], step])
+                        # GLACIER MELT (ice and firn) [m w.e.]
+                        # energy remaining after snow melt [degC day]
+                        melt_energy_available = (
+                                melt_energy_available - self.bin_meltsnow[:,step] / self.surfacetype_ddf_dict[2])
+                        # remove low values of energy available caused by rounding errors in the step above
+                        melt_energy_available[abs(melt_energy_available) < pygem_prms.tolerance] = 0
+                        # DDF based on surface type [m w.e. degC-1 day-1]
+                        for surfacetype_idx in self.surfacetype_ddf_dict:
+                            self.surfacetype_ddf[self.surfacetype == surfacetype_idx] = (
+                                    self.surfacetype_ddf_dict[surfacetype_idx])
+                            # Debris enhancement factors in ablation area (debris in accumulation area would submerge)
+                            if surfacetype_idx == 1 and pygem_prms.include_debris:
+                                self.surfacetype_ddf[self.surfacetype == 1] = (
+                                        self.surfacetype_ddf[self.surfacetype == 1] * self.debris_ed[self.surfacetype == 1])
+                        self.bin_meltglac[glac_idx_t0,step] = (
+                                self.surfacetype_ddf[glac_idx_t0] * melt_energy_available[glac_idx_t0])
+                        # TOTAL MELT (snow + glacier)
+                        #  off-glacier need to include melt of refreeze because there are no glacier dynamics,
+                        #  but on-glacier do not need to account for this (simply assume refreeze has same surface type)
+                        self.bin_melt[:,step] = self.bin_meltglac[:,step] + self.bin_meltsnow[:,step]
 
-                        # Loop through each elevation bin of glacier
-                        for nbin, gidx in enumerate(glac_idx_t0):
-                            # COMPUTE HEAT CONDUCTION - BUILD COLD RESERVOIR
-                            # If no melt, then build up cold reservoir (compute heat conduction)
-                            if self.bin_melt[gidx,step] < pygem_prms.rf_meltcrit:
+                        # REFREEZING
+                        if pygem_prms.option_refreezing == 'HH2015':
+                            if step > 0:
+                                self.tl_rf[:,:,step] = self.tl_rf[:,:,step-1]
+                                self.te_rf[:,:,step] = self.te_rf[:,:,step-1]
 
-                                if self.debug_refreeze and gidx == gidx_debug and step < 12:
-                                    print('\nMonth ' + str(self.dates_table.loc[step,'month']),
-                                          'Computing heat conduction')
+                            # Refreeze based on heat conduction approach (Huss and Hock 2015)
+                            # refreeze time step (s)
+                            rf_dt = 3600 * 24 * self.dayspermonth[step] / pygem_prms.rf_dsc
 
-                                # Set refreeze equal to 0
-                                self.refr[gidx] = 0
-                                # Loop through multiple iterations to converge on a solution
-                                #  -> this will loop through 0, 1, 2
-                                for h in np.arange(0, pygem_prms.rf_dsc):
-                                    # Compute heat conduction in layers (loop through rows)
-                                    #  go from 1 to rf_layers-1 to avoid indexing errors with "j-1" and "j+1"
-                                    #  "j+1" is set to zero, which is fine for temperate glaciers but inaccurate for
-                                    #  cold/polythermal glaciers
-                                    for j in np.arange(1, pygem_prms.rf_layers-1):
-                                        # Assume temperature of first layer equals air temperature
-                                        #  assumption probably wrong, but might still work at annual average
-                                        # Since next line uses tl_rf for all calculations, set tl_rf[0] to present mean
-                                        #  monthly air temperature to ensure the present calculations are done with the
-                                        #  present time step's air temperature
-                                        self.tl_rf[0, gidx,step] = self.bin_temp[gidx,step]
-                                        # Temperature for each layer
-                                        self.te_rf[j,gidx,step] = (self.tl_rf[j,gidx,step] +
-                                             rf_dt * self.rf_layers_k[j] / self.rf_layers_ch[j] / pygem_prms.rf_dz**2 *
-                                             0.5 * ((self.tl_rf[j-1,gidx,step] - self.tl_rf[j,gidx,step]) -
-                                                     (self.tl_rf[j,gidx,step] - self.tl_rf[j+1,gidx,step])))
-                                        # Update previous time step
-                                        self.tl_rf[:,gidx,step] = self.te_rf[:,gidx,step]
-
-                                if self.debug_refreeze and gidx == gidx_debug and step < 12:
-                                    print('tl_rf:', ["{:.2f}".format(x) for x in self.tl_rf[:,gidx,step]])
-
-                            # COMPUTE REFREEZING - TAP INTO "COLD RESERVOIR" or potential refreezing
+                            if pygem_prms.option_rf_limit_meltsnow == 1:
+                                bin_meltlimit = self.bin_meltsnow.copy()
                             else:
+                                bin_meltlimit = self.bin_melt.copy()
 
-                                if self.debug_refreeze and gidx == gidx_debug and step < 12:
-                                    print('\nMonth ' + str(self.dates_table.loc[step,'month']), 'Computing refreeze')
+                            # Debug lowest bin
+                            if self.debug_refreeze:
+                                gidx_debug = np.where(heights == heights[glac_idx_t0].min())[0]
 
-                                # Refreezing over firn surface
-                                if (self.surfacetype[gidx] == 2) or (self.surfacetype[gidx] == 3):
-                                    nlayers = pygem_prms.rf_layers-1
-                                # Refreezing over ice surface
-                                else:
-                                    # Approximate number of layers of snow on top of ice
-                                    smax = np.round((self.bin_snowpack[gidx,step] / (self.rf_layers_dens[0] / 1000) +
-                                                     pygem_prms.pp) / pygem_prms.rf_dz, 0)
-                                    # if there is very little snow on the ground (SWE > 0.06 m for pp=0.3),
-                                    #  then still set smax (layers) to 1
-                                    if self.bin_snowpack[gidx,step] > 0 and smax == 0:
-                                        smax=1
-                                    # if no snow on the ground, then set to rf_cold to NoData value
-                                    if smax == 0:
-                                        self.rf_cold[gidx] = 0
-                                    # if smax greater than the number of layers, set to max number of layers minus 1
-                                    if smax > pygem_prms.rf_layers - 1:
-                                        smax = pygem_prms.rf_layers - 1
-                                    nlayers = int(smax)
-                                # Compute potential refreeze, "cold reservoir", from temperature in each layer
-                                # only calculate potential refreezing first time it starts melting each year
-                                if self.rf_cold[gidx] == 0 and self.tl_rf[:,gidx,step].min() < 0:
+                            # Loop through each elevation bin of glacier
+                            for nbin, gidx in enumerate(glac_idx_t0):
+                                # COMPUTE HEAT CONDUCTION - BUILD COLD RESERVOIR
+                                # If no melt, then build up cold reservoir (compute heat conduction)
+                                if self.bin_melt[gidx,step] < pygem_prms.rf_meltcrit:
 
                                     if self.debug_refreeze and gidx == gidx_debug and step < 12:
-                                        print('calculating potential refreeze from ' + str(nlayers) + ' layers')
+                                        print('\nMonth ' + str(self.dates_table.loc[step,'month']),
+                                                'Computing heat conduction')
 
-                                    for j in np.arange(0,nlayers):
-                                        j += 1
-                                        # units: (degC) * (J K-1 m-3) * (m) * (kg J-1) * (m3 kg-1)
-                                        rf_cold_layer = (self.tl_rf[j,gidx,step] * self.rf_layers_ch[j] *
-                                                         pygem_prms.rf_dz / pygem_prms.Lh_rf / pygem_prms.density_water)
-                                        self.rf_cold[gidx] -= rf_cold_layer
+                                    # Set refreeze equal to 0
+                                    self.refr[gidx] = 0
+                                    # Loop through multiple iterations to converge on a solution
+                                    #  -> this will loop through 0, 1, 2
+                                    for h in np.arange(0, pygem_prms.rf_dsc):
+                                        # Compute heat conduction in layers (loop through rows)
+                                        #  go from 1 to rf_layers-1 to avoid indexing errors with "j-1" and "j+1"
+                                        #  "j+1" is set to zero, which is fine for temperate glaciers but inaccurate for
+                                        #  cold/polythermal glaciers
+                                        for j in np.arange(1, pygem_prms.rf_layers-1):
+                                            # Assume temperature of first layer equals air temperature
+                                            #  assumption probably wrong, but might still work at annual average
+                                            # Since next line uses tl_rf for all calculations, set tl_rf[0] to present mean
+                                            #  monthly air temperature to ensure the present calculations are done with the
+                                            #  present time step's air temperature
+                                            self.tl_rf[0, gidx,step] = self.bin_temp[gidx,step]
+                                            # Temperature for each layer
+                                            self.te_rf[j,gidx,step] = (self.tl_rf[j,gidx,step] +
+                                                    rf_dt * self.rf_layers_k[j] / self.rf_layers_ch[j] / pygem_prms.rf_dz**2 *
+                                                    0.5 * ((self.tl_rf[j-1,gidx,step] - self.tl_rf[j,gidx,step]) -
+                                                            (self.tl_rf[j,gidx,step] - self.tl_rf[j+1,gidx,step])))
+                                            # Update previous time step
+                                            self.tl_rf[:,gidx,step] = self.te_rf[:,gidx,step]
+
+                                    if self.debug_refreeze and gidx == gidx_debug and step < 12:
+                                        print('tl_rf:', ["{:.2f}".format(x) for x in self.tl_rf[:,gidx,step]])
+
+                                # COMPUTE REFREEZING - TAP INTO "COLD RESERVOIR" or potential refreezing
+                                else:
+
+                                    if self.debug_refreeze and gidx == gidx_debug and step < 12:
+                                        print('\nMonth ' + str(self.dates_table.loc[step,'month']), 'Computing refreeze')
+
+                                    # Refreezing over firn surface
+                                    if (self.surfacetype[gidx] == 2) or (self.surfacetype[gidx] == 3):
+                                        nlayers = pygem_prms.rf_layers-1
+                                    # Refreezing over ice surface
+                                    else:
+                                        # Approximate number of layers of snow on top of ice
+                                        smax = np.round((self.bin_snowpack[gidx,step] / (self.rf_layers_dens[0] / 1000) +
+                                                            pygem_prms.pp) / pygem_prms.rf_dz, 0)
+                                        # if there is very little snow on the ground (SWE > 0.06 m for pp=0.3),
+                                        #  then still set smax (layers) to 1
+                                        if self.bin_snowpack[gidx,step] > 0 and smax == 0:
+                                            smax=1
+                                        # if no snow on the ground, then set to rf_cold to NoData value
+                                        if smax == 0:
+                                            self.rf_cold[gidx] = 0
+                                        # if smax greater than the number of layers, set to max number of layers minus 1
+                                        if smax > pygem_prms.rf_layers - 1:
+                                            smax = pygem_prms.rf_layers - 1
+                                        nlayers = int(smax)
+                                    # Compute potential refreeze, "cold reservoir", from temperature in each layer
+                                    # only calculate potential refreezing first time it starts melting each year
+                                    if self.rf_cold[gidx] == 0 and self.tl_rf[:,gidx,step].min() < 0:
 
                                         if self.debug_refreeze and gidx == gidx_debug and step < 12:
-                                            print('j:', j, 'tl_rf @ j:', np.round(self.tl_rf[j,gidx,step],2),
-                                                           'ch @ j:', np.round(self.rf_layers_ch[j],2),
-                                                           'rf_cold_layer @ j:', np.round(rf_cold_layer,2),
-                                                           'rf_cold @ j:', np.round(self.rf_cold[gidx],2))
+                                            print('calculating potential refreeze from ' + str(nlayers) + ' layers')
 
-                                    if self.debug_refreeze and gidx == gidx_debug and step < 12:
-                                        print('rf_cold:', np.round(self.rf_cold[gidx],2))
+                                        for j in np.arange(0,nlayers):
+                                            j += 1
+                                            # units: (degC) * (J K-1 m-3) * (m) * (kg J-1) * (m3 kg-1)
+                                            rf_cold_layer = (self.tl_rf[j,gidx,step] * self.rf_layers_ch[j] *
+                                                                pygem_prms.rf_dz / pygem_prms.Lh_rf / pygem_prms.density_water)
+                                            self.rf_cold[gidx] -= rf_cold_layer
 
-                                # Compute refreezing
-                                # If melt and liquid prec < potential refreeze, then refreeze all melt and liquid prec
-                                if (bin_meltlimit[gidx,step] + self.bin_prec[gidx,step]) < self.rf_cold[gidx]:
-                                    self.refr[gidx] = bin_meltlimit[gidx,step] + self.bin_prec[gidx,step]
-                                # otherwise, refreeze equals the potential refreeze
-                                elif self.rf_cold[gidx] > 0:
-                                    self.refr[gidx] = self.rf_cold[gidx]
-                                else:
-                                    self.refr[gidx] = 0
+                                            if self.debug_refreeze and gidx == gidx_debug and step < 12:
+                                                print('j:', j, 'tl_rf @ j:', np.round(self.tl_rf[j,gidx,step],2),
+                                                                'ch @ j:', np.round(self.rf_layers_ch[j],2),
+                                                                'rf_cold_layer @ j:', np.round(rf_cold_layer,2),
+                                                                'rf_cold @ j:', np.round(self.rf_cold[gidx],2))
 
-                                # Track the remaining potential refreeze
-                                self.rf_cold[gidx] -= (bin_meltlimit[gidx,step] + self.bin_prec[gidx,step])
-                                # if potential refreeze consumed, set to 0 and set temperature to 0 (temperate firn)
-                                if self.rf_cold[gidx] < 0:
-                                    self.rf_cold[gidx] = 0
-                                    self.tl_rf[:,gidx,step] = 0
+                                        if self.debug_refreeze and gidx == gidx_debug and step < 12:
+                                            print('rf_cold:', np.round(self.rf_cold[gidx],2))
 
-                            # Record refreeze
-                            self.bin_refreeze[gidx,step] = self.refr[gidx]
+                                    # Compute refreezing
+                                    # If melt and liquid prec < potential refreeze, then refreeze all melt and liquid prec
+                                    if (bin_meltlimit[gidx,step] + self.bin_prec[gidx,step]) < self.rf_cold[gidx]:
+                                        self.refr[gidx] = bin_meltlimit[gidx,step] + self.bin_prec[gidx,step]
+                                    # otherwise, refreeze equals the potential refreeze
+                                    elif self.rf_cold[gidx] > 0:
+                                        self.refr[gidx] = self.rf_cold[gidx]
+                                    else:
+                                        self.refr[gidx] = 0
 
-                            if self.debug_refreeze and step < 12 and gidx == gidx_debug:
-                                print('Month ' + str(self.dates_table.loc[step,'month']),
-                                      'Rf_cold remaining:', np.round(self.rf_cold[gidx],2),
-                                      'Snow depth:', np.round(self.bin_snowpack[glac_idx_t0[nbin],step],2),
-                                      'Snow melt:', np.round(self.bin_meltsnow[glac_idx_t0[nbin],step],2),
-                                      'Rain:', np.round(self.bin_prec[glac_idx_t0[nbin],step],2),
-                                      'Rfrz:', np.round(self.bin_refreeze[gidx,step],2))
+                                    # Track the remaining potential refreeze
+                                    self.rf_cold[gidx] -= (bin_meltlimit[gidx,step] + self.bin_prec[gidx,step])
+                                    # if potential refreeze consumed, set to 0 and set temperature to 0 (temperate firn)
+                                    if self.rf_cold[gidx] < 0:
+                                        self.rf_cold[gidx] = 0
+                                        self.tl_rf[:,gidx,step] = 0
 
-                    elif pygem_prms.option_refreezing == 'Woodward':
-                        # Refreeze based on annual air temperature (Woodward etal. 1997)
-                        #  R(m) = (-0.69 * Tair + 0.0096) * 1 m / 100 cm
-                        # calculate annually and place potential refreeze in user defined month
-                        if step%12 == 0:
-                            bin_temp_annual = annualweightedmean_array(self.bin_temp[:,12*year:12*(year+1)],
-                                                                       self.dates_table.iloc[12*year:12*(year+1),:])
-                            bin_refreezepotential_annual = (-0.69 * bin_temp_annual + 0.0096) / 100
-                            # Remove negative refreezing values
-                            bin_refreezepotential_annual[bin_refreezepotential_annual < 0] = 0
-                            self.bin_refreezepotential[:,step] = bin_refreezepotential_annual
-                            # Reset refreeze potential every year
-                            if self.bin_refreezepotential[:,step].max() > 0:
-                                refreeze_potential = self.bin_refreezepotential[:,step]
+                                # Record refreeze
+                                self.bin_refreeze[gidx,step] = self.refr[gidx]
 
-                        if self.debug_refreeze:
-                            print('Year ' + str(year) + ' Month ' + str(self.dates_table.loc[step,'month']),
-                                  'Refreeze potential:', np.round(refreeze_potential[glac_idx_t0[0]],3),
-                                  'Snow depth:', np.round(self.bin_snowpack[glac_idx_t0[0],step],2),
-                                  'Snow melt:', np.round(self.bin_meltsnow[glac_idx_t0[0],step],2),
-                                  'Rain:', np.round(self.bin_prec[glac_idx_t0[0],step],2))
+                                if self.debug_refreeze and step < 12 and gidx == gidx_debug:
+                                    print('Month ' + str(self.dates_table.loc[step,'month']),
+                                            'Rf_cold remaining:', np.round(self.rf_cold[gidx],2),
+                                            'Snow depth:', np.round(self.bin_snowpack[glac_idx_t0[nbin],step],2),
+                                            'Snow melt:', np.round(self.bin_meltsnow[glac_idx_t0[nbin],step],2),
+                                            'Rain:', np.round(self.bin_prec[glac_idx_t0[nbin],step],2),
+                                            'Rfrz:', np.round(self.bin_refreeze[gidx,step],2))
 
-                        # Refreeze [m w.e.]
-                        #  refreeze cannot exceed rain and melt (snow & glacier melt)
-                        self.bin_refreeze[:,step] = self.bin_meltsnow[:,step] + self.bin_prec[:,step]
-                        # refreeze cannot exceed snow depth
-                        self.bin_refreeze[self.bin_refreeze[:,step] > self.bin_snowpack[:,step], step] = (
-                                self.bin_snowpack[self.bin_refreeze[:,step] > self.bin_snowpack[:,step], step])
-                        # refreeze cannot exceed refreeze potential
-                        self.bin_refreeze[self.bin_refreeze[:,step] > refreeze_potential, step] = (
-                                refreeze_potential[self.bin_refreeze[:,step] > refreeze_potential])
-                        self.bin_refreeze[abs(self.bin_refreeze[:,step]) < pygem_prms.tolerance, step] = 0
-                        # update refreeze potential
-                        refreeze_potential -= self.bin_refreeze[:,step]
-                        refreeze_potential[abs(refreeze_potential) < pygem_prms.tolerance] = 0
+                        elif pygem_prms.option_refreezing == 'Woodward':
+                            # Refreeze based on annual air temperature (Woodward etal. 1997)
+                            #  R(m) = (-0.69 * Tair + 0.0096) * 1 m / 100 cm
+                            # calculate annually and place potential refreeze in user defined month
+                            if step%12 == 0:
+                                bin_temp_annual = annualweightedmean_array(self.bin_temp[:,12*year:12*(year+1)],
+                                                                            self.dates_table.iloc[12*year:12*(year+1),:])
+                                bin_refreezepotential_annual = (-0.69 * bin_temp_annual + 0.0096) / 100
+                                # Remove negative refreezing values
+                                bin_refreezepotential_annual[bin_refreezepotential_annual < 0] = 0
+                                self.bin_refreezepotential[:,step] = bin_refreezepotential_annual
+                                # Reset refreeze potential every year
+                                if self.bin_refreezepotential[:,step].max() > 0:
+                                    refreeze_potential = self.bin_refreezepotential[:,step]
 
-                    # SNOWPACK REMAINING [m w.e.]
-                    self.snowpack_remaining[:,step] = self.bin_snowpack[:,step] - self.bin_meltsnow[:,step]
-                    self.snowpack_remaining[abs(self.snowpack_remaining[:,step]) < pygem_prms.tolerance, step] = 0
+                            if self.debug_refreeze:
+                                print('Year ' + str(year) + ' Month ' + str(self.dates_table.loc[step,'month']),
+                                        'Refreeze potential:', np.round(refreeze_potential[glac_idx_t0[0]],3),
+                                        'Snow depth:', np.round(self.bin_snowpack[glac_idx_t0[0],step],2),
+                                        'Snow melt:', np.round(self.bin_meltsnow[glac_idx_t0[0],step],2),
+                                        'Rain:', np.round(self.bin_prec[glac_idx_t0[0],step],2))
 
-                    # Record values
-                    self.glac_bin_melt[glac_idx_t0,step] = self.bin_melt[glac_idx_t0,step]
-                    self.glac_bin_refreeze[glac_idx_t0,step] = self.bin_refreeze[glac_idx_t0,step]
-                    self.glac_bin_snowpack[glac_idx_t0,step] = self.bin_snowpack[glac_idx_t0,step]
-                    # CLIMATIC MASS BALANCE [m w.e.]
-                    self.glac_bin_massbalclim[glac_idx_t0,step] = (
-                            self.bin_acc[glac_idx_t0,step] + self.glac_bin_refreeze[glac_idx_t0,step] -
-                            self.glac_bin_melt[glac_idx_t0,step])
+                            # Refreeze [m w.e.]
+                            #  refreeze cannot exceed rain and melt (snow & glacier melt)
+                            self.bin_refreeze[:,step] = self.bin_meltsnow[:,step] + self.bin_prec[:,step]
+                            # refreeze cannot exceed snow depth
+                            self.bin_refreeze[self.bin_refreeze[:,step] > self.bin_snowpack[:,step], step] = (
+                                    self.bin_snowpack[self.bin_refreeze[:,step] > self.bin_snowpack[:,step], step])
+                            # refreeze cannot exceed refreeze potential
+                            self.bin_refreeze[self.bin_refreeze[:,step] > refreeze_potential, step] = (
+                                    refreeze_potential[self.bin_refreeze[:,step] > refreeze_potential])
+                            self.bin_refreeze[abs(self.bin_refreeze[:,step]) < pygem_prms.tolerance, step] = 0
+                            # update refreeze potential
+                            refreeze_potential -= self.bin_refreeze[:,step]
+                            refreeze_potential[abs(refreeze_potential) < pygem_prms.tolerance] = 0
 
-                    # OFF-GLACIER ACCUMULATION, MELT, REFREEZE, AND SNOWPACK
-                    if option_areaconstant == False:
-                        # precipitation, refreeze, and snowpack are the same both on- and off-glacier
-                        self.offglac_bin_prec[offglac_idx,step] = self.bin_prec[offglac_idx,step]
-                        self.offglac_bin_refreeze[offglac_idx,step] = self.bin_refreeze[offglac_idx,step]
-                        self.offglac_bin_snowpack[offglac_idx,step] = self.bin_snowpack[offglac_idx,step]
-                        # Off-glacier melt includes both snow melt and melting of refreezing
-                        #  (this is not an issue on-glacier because energy remaining melts underlying snow/ice)
-                        # melt of refreezing (assumed to be snow)
-                        self.offglac_meltrefreeze = self.surfacetype_ddf_dict[2] * melt_energy_available
-                        # melt of refreezing cannot exceed refreezing
-                        self.offglac_meltrefreeze[self.offglac_meltrefreeze > self.bin_refreeze[:,step]] = (
-                                self.bin_refreeze[:,step][self.offglac_meltrefreeze > self.bin_refreeze[:,step]])
-                        # off-glacier melt = snow melt + refreezing melt
-                        self.offglac_bin_melt[offglac_idx,step] = (self.bin_meltsnow[offglac_idx,step] +
-                                                                   self.offglac_meltrefreeze[offglac_idx])
+                        # SNOWPACK REMAINING [m w.e.]
+                        self.snowpack_remaining[:,step] = self.bin_snowpack[:,step] - self.bin_meltsnow[:,step]
+                        self.snowpack_remaining[abs(self.snowpack_remaining[:,step]) < pygem_prms.tolerance, step] = 0
 
-                # ===== RETURN TO ANNUAL LOOP =====
-                # SURFACE TYPE (-)
-                # Annual climatic mass balance [m w.e.] used to determine the surface type
-                self.glac_bin_massbalclim_annual[:,year] = self.glac_bin_massbalclim[:,12*year:12*(year+1)].sum(1)
-                # Update surface type for each bin
-                self.surfacetype, firnline_idx = self._surfacetypebinsannual(self.surfacetype,
-                                                                             self.glac_bin_massbalclim_annual, year)
-                # Record binned glacier area
-                self.glac_bin_area_annual[:,year] = glacier_area_t0
-                # Store glacier-wide results
-                self._convert_glacwide_results(year, glacier_area_t0, heights, fls=fls, fl_id=fl_id, 
-                                               option_areaconstant=option_areaconstant)
+                        # Record values
+                        self.glac_bin_melt[glac_idx_t0,step] = self.bin_melt[glac_idx_t0,step]
+                        self.glac_bin_refreeze[glac_idx_t0,step] = self.bin_refreeze[glac_idx_t0,step]
+                        self.glac_bin_snowpack[glac_idx_t0,step] = self.bin_snowpack[glac_idx_t0,step]
+                        # CLIMATIC MASS BALANCE [m w.e.]
+                        self.glac_bin_massbalclim[glac_idx_t0,step] = (
+                                self.bin_acc[glac_idx_t0,step] + self.glac_bin_refreeze[glac_idx_t0,step] -
+                                self.glac_bin_melt[glac_idx_t0,step])
 
-##                if debug:
-#                debug_startyr = 57
-#                debug_endyr = 61
-#                if year > debug_startyr and year < debug_endyr:
-#                    print('\n', year, 'glac_bin_massbalclim:', self.glac_bin_massbalclim[:,12*year:12*(year+1)].sum(1))
-#                    print('ice thickness:', icethickness_t0)
-#                    print('heights:', heights[glac_idx_t0])
-##                    print('surface type present:', self.glac_bin_surfacetype_annual[12:20,year])
-##                    print('surface type updated:', self.surfacetype[12:20])
+                        # OFF-GLACIER ACCUMULATION, MELT, REFREEZE, AND SNOWPACK
+                        if option_areaconstant == False:
+                            # precipitation, refreeze, and snowpack are the same both on- and off-glacier
+                            self.offglac_bin_prec[offglac_idx,step] = self.bin_prec[offglac_idx,step]
+                            self.offglac_bin_refreeze[offglac_idx,step] = self.bin_refreeze[offglac_idx,step]
+                            self.offglac_bin_snowpack[offglac_idx,step] = self.bin_snowpack[offglac_idx,step]
+                            # Off-glacier melt includes both snow melt and melting of refreezing
+                            #  (this is not an issue on-glacier because energy remaining melts underlying snow/ice)
+                            # melt of refreezing (assumed to be snow)
+                            self.offglac_meltrefreeze = self.surfacetype_ddf_dict[2] * melt_energy_available
+                            # melt of refreezing cannot exceed refreezing
+                            self.offglac_meltrefreeze[self.offglac_meltrefreeze > self.bin_refreeze[:,step]] = (
+                                    self.bin_refreeze[:,step][self.offglac_meltrefreeze > self.bin_refreeze[:,step]])
+                            # off-glacier melt = snow melt + refreezing melt
+                            self.offglac_bin_melt[offglac_idx,step] = (self.bin_meltsnow[offglac_idx,step] +
+                                                                        self.offglac_meltrefreeze[offglac_idx])
 
-        # Mass balance for each bin [m ice per second]
-        if year_month is None:
-            seconds_in_year = self.dayspermonth[12*year:12*(year+1)].sum() * 24 * 3600
-            mb = (self.glac_bin_massbalclim[:,12*year:12*(year+1)].sum(1)
-                  * pygem_prms.density_water / pygem_prms.density_ice / seconds_in_year)
-        else:
-            seconds_in_month = self.dayspermonth[12*year+round(year_month*12)]* 24 * 3600
-            mb = (self.glac_bin_massbalclim[:,12*year+round(year_month*12)]
-                  * pygem_prms.density_water / pygem_prms.density_ice
-                  /seconds_in_month)
-            print("index for mb")
-            print(12*year+int(year_month*12))
-            print(year_month)
-            print(year)
-            
-        if self.inversion_filter:
-            mb = np.minimum.accumulate(mb)
+                    # ===== RETURN TO ANNUAL LOOP =====
+                    # SURFACE TYPE (-)
+                    # Annual climatic mass balance [m w.e.] used to determine the surface type
+                    self.glac_bin_massbalclim_annual[:,year] = self.glac_bin_massbalclim[:,12*year:12*(year+1)].sum(1)
+                    # Update surface type for each bin
+                    self.surfacetype, firnline_idx = self._surfacetypebinsannual(self.surfacetype,
+                                                                                    self.glac_bin_massbalclim_annual, year)
+                    # Record binned glacier area
+                    self.glac_bin_area_annual[:,year] = glacier_area_t0
+                    # Store glacier-wide results
+                    self._convert_glacwide_results(year, glacier_area_t0, heights, fls=fls, fl_id=fl_id, 
+                                                    option_areaconstant=option_areaconstant)
 
-        # Fill in non-glaciated areas - needed for OGGM dynamics to remove small ice flux into next bin
-        mb_filled = mb.copy()
-        if len(glac_idx_t0) > 3:
-            mb_max = np.max(mb[glac_idx_t0])
-            mb_min = np.min(mb[glac_idx_t0])
-            height_max = np.max(heights[glac_idx_t0])
-            height_min = np.min(heights[glac_idx_t0])
-            mb_grad = (mb_min - mb_max) / (height_max - height_min)
-            mb_filled[(mb_filled==0) & (heights < height_max)] = (
-                    mb_min + mb_grad * (height_min - heights[(mb_filled==0) & (heights < height_max)]))
+        ##                if debug:
+        #                debug_startyr = 57
+        #                debug_endyr = 61
+        #                if year > debug_startyr and year < debug_endyr:
+        #                    print('\n', year, 'glac_bin_massbalclim:', self.glac_bin_massbalclim[:,12*year:12*(year+1)].sum(1))
+        #                    print('ice thickness:', icethickness_t0)
+        #                    print('heights:', heights[glac_idx_t0])
+        ##                    print('surface type present:', self.glac_bin_surfacetype_annual[12:20,year])
+        ##                    print('surface type updated:', self.surfacetype[12:20])
 
-        elif len(glac_idx_t0) >= 1 and len(glac_idx_t0) <= 3 and mb.max() <= 0:
-            mb_min = np.min(mb[glac_idx_t0])
-            height_max = np.max(heights[glac_idx_t0])
-            mb_filled[(mb_filled==0) & (heights < height_max)] = mb_min
-            
-#            if year > debug_startyr and year < debug_endyr:
-#                print('mb_min:', mb_min)
-#                
-#        if year > debug_startyr and year < debug_endyr:
-#            import matplotlib.pyplot as plt
-#            plt.plot(mb_filled, heights, '.')
-#            plt.ylabel('Elevation')
-#            plt.xlabel('Mass balance (mwea)')
-#            plt.show()
-#            
-#            print('mb_filled:', mb_filled)
+            # Mass balance for each bin [m ice per second]
+            if year_month is None:
+                seconds_in_year = self.dayspermonth[12*year:12*(year+1)].sum() * 24 * 3600
+                mb = (self.glac_bin_massbalclim[:,12*year:12*(year+1)].sum(1)
+                        * pygem_prms.density_water / pygem_prms.density_ice / seconds_in_year)
+            else:
+                print("year in get_annul_mb is:",year)
+                print("****************** year_month in get_annual_mb is ******************:",year_month)
+                seconds_in_month = self.dayspermonth[12*year+round(year_month*12)]* 24 * 3600
+                mb = (self.glac_bin_massbalclim[:,12*year+round(year_month*12)]
+                        * pygem_prms.density_water / pygem_prms.density_ice
+                        /seconds_in_month)
+                print("index for mb")
+                print(12*year+int(year_month*12))
+                print(year_month)
+                print(year)
                 
-        return mb_filled
+            if self.inversion_filter:
+                mb = np.minimum.accumulate(mb)
 
+            # Fill in non-glaciated areas - needed for OGGM dynamics to remove small ice flux into next bin
+            mb_filled = mb.copy()
+            if len(glac_idx_t0) > 3:
+                mb_max = np.max(mb[glac_idx_t0])
+                mb_min = np.min(mb[glac_idx_t0])
+                height_max = np.max(heights[glac_idx_t0])
+                height_min = np.min(heights[glac_idx_t0])
+                mb_grad = (mb_min - mb_max) / (height_max - height_min)
+                mb_filled[(mb_filled==0) & (heights < height_max)] = (
+                        mb_min + mb_grad * (height_min - heights[(mb_filled==0) & (heights < height_max)]))
+
+            elif len(glac_idx_t0) >= 1 and len(glac_idx_t0) <= 3 and mb.max() <= 0:
+                mb_min = np.min(mb[glac_idx_t0])
+                height_max = np.max(heights[glac_idx_t0])
+                mb_filled[(mb_filled==0) & (heights < height_max)] = mb_min
+                
+        #            if year > debug_startyr and year < debug_endyr:
+        #                print('mb_min:', mb_min)
+        #                
+        #        if year > debug_startyr and year < debug_endyr:
+        #            import matplotlib.pyplot as plt
+        #            plt.plot(mb_filled, heights, '.')
+        #            plt.ylabel('Elevation')
+        #            plt.xlabel('Mass balance (mwea)')
+        #            plt.show()
+        #            
+        #            print('mb_filled:', mb_filled)
+                    
+            return mb_filled
+        except:
+            print(traceback.format_exc())
 
     #%%
     def _convert_glacwide_results(self, year, glacier_area, heights, 
