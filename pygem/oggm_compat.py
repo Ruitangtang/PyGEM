@@ -50,7 +50,7 @@ def single_flowline_glacier_directory(rgi_id, reset=pygem_prms.overwrite_gdirs, 
     cfg.PARAMS['use_multiprocessing']  = False
     
     # Avoid erroneous glaciers (e.g., Centerlines too short or other issues)
-    cfg.PARAMS['continue_on_error'] = True
+    cfg.PARAMS['continue_on_error'] = False
     
     # Has internet
     cfg.PARAMS['has_internet'] = has_internet
@@ -143,7 +143,7 @@ def single_flowline_glacier_directory_with_calving(rgi_id, reset=pygem_prms.over
     cfg.PARAMS['use_multiprocessing']  = False
     
     # Avoid erroneous glaciers (e.g., Centerlines too short or other issues)
-    cfg.PARAMS['continue_on_error'] = True
+    cfg.PARAMS['continue_on_error'] = False
     
     # Has internet
     cfg.PARAMS['has_internet'] = has_internet
