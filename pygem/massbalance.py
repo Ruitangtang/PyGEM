@@ -198,7 +198,7 @@ class PyGEMMassBalance(MassBalanceModel):
         
         return mb
 
-    def get_annual_mb(self, heights, year=None, fls = None, fl_id = 0,
+    def get_annual_mb(self, heights, year=None, fls = None, fl_id = -1,
                       debug=False, option_areaconstant=False, year_month=None):
         """FIXED FORMAT FOR THE FLOWLINE MODEL
 
@@ -679,8 +679,8 @@ class PyGEMMassBalance(MassBalanceModel):
             else:
                 print("year in get_annul_mb is:",year)
                 print("****************** year_month in get_annual_mb is ******************:",year_month)
-                seconds_in_month = self.dayspermonth[12*year+round(year_month*12)]* 24 * 3600
-                mb = (self.glac_bin_massbalclim[:,12*year+round(year_month*12)]
+                seconds_in_month = self.dayspermonth[12*year+int(year_month*12)]* 24 * 3600
+                mb = (self.glac_bin_massbalclim[:,12*year+int(year_month*12)]
                         * pygem_prms.density_water / pygem_prms.density_ice
                         /seconds_in_month)
                 print("index for mb")
