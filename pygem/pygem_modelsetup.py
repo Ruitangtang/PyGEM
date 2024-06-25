@@ -6,6 +6,7 @@ import os
 import pandas as pd
 import numpy as np
 from datetime import datetime
+import traceback
 # Local libraries
 import pygem_input as pygem_prms
 
@@ -306,7 +307,7 @@ def selectglaciersrgitable(glac_no=None, rgi_regionsO1=None, rgi_regionsO2='all'
         print(region)
         if glac_no is not None:
             rgi_glac_number = glac_no_byregion[region]
-
+        print("rgi_glac_number:",rgi_glac_number)
 #        if len(rgi_glac_number) < 50:
 
         for i in os.listdir(rgi_fp):
@@ -317,6 +318,7 @@ def selectglaciersrgitable(glac_no=None, rgi_regionsO1=None, rgi_regionsO2='all'
             csv_regionO1 = pd.read_csv(rgi_fp + rgi_fn)
         except:
             csv_regionO1 = pd.read_csv(rgi_fp + rgi_fn, encoding='latin1')
+            print(traceback.format_exc())
         
         # Populate glacer_table with the glaciers of interest
         if rgi_regionsO2 == 'all' and rgi_glac_number == 'all':
@@ -354,7 +356,7 @@ def selectglaciersrgitable(glac_no=None, rgi_regionsO1=None, rgi_regionsO2='all'
             else:
                 glacier_table = (pd.concat([glacier_table, csv_regionO1.loc[rgi_idx]],
                                            axis=0))
-                    
+    print("glacier_table:",glacier_table)                
     glacier_table = glacier_table.copy()
     print('num glc in the region:',glacier_table.shape[0])
     # reset the index so that it is in sequential order (0, 1, 2, etc.)
