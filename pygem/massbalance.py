@@ -50,8 +50,8 @@ class PyGEMMassBalance(MassBalanceModel):
             switch to run the model in reverse or not (may be irrelevant after converting to OGGM's setup)
         """
 
-        print("the input flowlines in PyGEMMassBalance Model is: ")
-        print(type(fls).__name__)
+        #print("the input flowlines in PyGEMMassBalance Model is: ")
+        #print(type(fls).__name__)
 
         if debug:
             print('\n\nDEBUGGING MASS BALANCE FUNCTION\n\n')
@@ -218,14 +218,14 @@ class PyGEMMassBalance(MassBalanceModel):
         """          
         #year = int(year)
         year=int(year)
-        print("Year is: ", year, "Month is:", year_month)
+        #print("Year is: ", year, "Month is:", year_month)
         try:
             if self.repeat_period:
                 year = year % (pygem_prms.gcm_endyear - pygem_prms.gcm_startyear)
-            print("######################### In PyGEMMassBalance get annual mb")
-            print("fl_id is ",fl_id)
-            print("fls is ",fls)
-            print("#########################")
+            # print("######################### In PyGEMMassBalance get annual mb")
+            # print("fl_id is ",fl_id)
+            # print("fls is ",fls)
+            # print("#########################")
             # try:
             #     fls = self.gdir.read_pickle('inversion_flowlines')
             #     print("######################### 2")
@@ -237,7 +237,7 @@ class PyGEMMassBalance(MassBalanceModel):
             #     print(traceback.format_exc())
                     
             if (fls is not None) and (fl_id is not None):
-                print("fls and fl_id are not None")
+                #print("fls and fl_id are not None")
                 try:
                     fl = fls[fl_id]
                 except:
@@ -271,7 +271,7 @@ class PyGEMMassBalance(MassBalanceModel):
             
             # Glacier indices
             glac_idx_t0 = glacier_area_t0.nonzero()[0]
-            print('the indices of glacier nonzero at t0 is:',glac_idx_t0)
+            #print('the indices of glacier nonzero at t0 is:',glac_idx_t0)
             
             nbins = heights.shape[0]
             nmonths = self.glacier_gcm_temp.shape[0]
