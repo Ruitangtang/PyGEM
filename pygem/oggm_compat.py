@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import netCDF4
+import traceback
 # Local libraries
 import pygem_input as pygem_prms
 from oggm import cfg, utils
@@ -79,29 +80,33 @@ def single_flowline_glacier_directory(rgi_id, reset=pygem_prms.overwrite_gdirs, 
         process_gdir = True
     
     if process_gdir:
-        # Start after the prepro task level
-        base_url = pygem_prms.oggm_base_url
+        try:
+            # Start after the prepro task level
+            base_url = pygem_prms.oggm_base_url
 
-        cfg.PARAMS['has_internet'] = pygem_prms.has_internet
-        gdirs = workflow.init_glacier_directories([rgi_id], from_prepro_level=2, prepro_border=cfg.PARAMS['border'], 
-                                                  prepro_base_url=base_url, prepro_rgi_version='62')
+            cfg.PARAMS['has_internet'] = pygem_prms.has_internet
+            gdirs = workflow.init_glacier_directories([rgi_id], from_prepro_level=2, prepro_border=cfg.PARAMS['border'], 
+                                                    prepro_base_url=base_url, prepro_rgi_version='62')
 
-        # Compute all the stuff
-        list_tasks = [          
-            # Consensus ice thickness
-            icethickness.consensus_gridded,
-            # Mass balance data
-            mbdata.mb_df_to_gdir]
-        
-        # Debris tasks
-        if pygem_prms.include_debris:
-            list_tasks.append(debris.debris_to_gdir)
-            list_tasks.append(debris.debris_binned)
+            # Compute all the stuff
+            list_tasks = [          
+                # Consensus ice thickness
+                icethickness.consensus_gridded,
+                # Mass balance data
+                mbdata.mb_df_to_gdir]
             
-        for task in list_tasks:
-            workflow.execute_entity_task(task, gdirs)
-            
-        gdir = gdirs[0]
+            # Debris tasks
+            if pygem_prms.include_debris:
+                list_tasks.append(debris.debris_to_gdir)
+                list_tasks.append(debris.debris_binned)
+                
+            for task in list_tasks:
+                workflow.execute_entity_task(task, gdirs)
+                
+            gdir = gdirs[0]
+        except:
+            print("Somenthing wrong with the single_flowline_glacier_directory")
+            print(traceback.format_exc())
     
         return gdir
         
