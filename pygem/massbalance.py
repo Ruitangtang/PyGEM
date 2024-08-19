@@ -684,9 +684,9 @@ class PyGEMMassBalance(MassBalanceModel):
                         * pygem_prms.density_water / pygem_prms.density_ice
                         /seconds_in_month)
                 print("index for mb")
-                print(12*year+int(year_month*12))
-                print(year_month)
-                print(year)
+                print("Step (float)",12*year+int(year_month*12))
+                print("Month",year_month)
+                print("Year (int)",year)
                 
             if self.inversion_filter:
                 mb = np.minimum.accumulate(mb)
