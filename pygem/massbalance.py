@@ -298,7 +298,8 @@ class PyGEMMassBalance(MassBalanceModel):
                 if option_areaconstant == False:
                     self.offglac_bin_area_annual[:,year] = glacier_area_initial - glacier_area_t0
                     offglac_idx = np.where(self.offglac_bin_area_annual[:,year] > 0)[0]
-                    print('****************** off glacier idx is*******************',offglac_idx)
+                    #TODO offglacier idx is not defined as off glacier, it's the idex with glacier area shrink
+                    #print('****************** off glacier idx is*******************',offglac_idx)
 
                 # Functions currently set up for monthly timestep
                 #  only compute mass balance while glacier exists
