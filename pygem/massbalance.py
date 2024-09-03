@@ -192,7 +192,8 @@ class PyGEMMassBalance(MassBalanceModel):
         print("year in get_monthly_mb is :",year)
         year_floor=np.floor(year)
         month=year-int(year_floor)
-
+        print("year_floor to get_annual_mb is :",year_floor)
+        print("month to get_annual_mb is :",month)
         mb=self.get_annual_mb(heights=heights, year=year_floor, fls=fls, fl_id=fl_id,
                       debug=debug, option_areaconstant=False, year_month=month)
         
