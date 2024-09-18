@@ -680,8 +680,9 @@ class PyGEMMassBalance(MassBalanceModel):
                         * pygem_prms.density_water / pygem_prms.density_ice / seconds_in_year)
             else:
                 print("year in get_annul_mb is:",year)
-                print("****************** year_month in get_annual_mb is ******************:",year_month)
+                print("year_month in get_annual_mb is:",year_month)
                 seconds_in_month = self.dayspermonth[12*year+int(year_month*12)]* 24 * 3600
+                print("seconds_in_month",seconds_in_month)
                 mb = (self.glac_bin_massbalclim[:,12*year+int(year_month*12)]
                         * pygem_prms.density_water / pygem_prms.density_ice
                         /seconds_in_month)
@@ -720,7 +721,7 @@ class PyGEMMassBalance(MassBalanceModel):
         #            plt.show()
         #            
         #            print('mb_filled:', mb_filled)
-                    
+            print("**************** get_annual_mb end ****************")        
             return mb_filled
         except:
             print(traceback.format_exc())
