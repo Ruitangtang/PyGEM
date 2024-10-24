@@ -13,6 +13,9 @@ from oggm.cfg import SEC_IN_YEAR
 from oggm.core.massbalance import MassBalanceModel
 #from oggm.shop import rgitopo
 from pygem.shop import debris, mbdata, icethickness
+# add the millan22 thickness
+from oggm.shop import millan22
+
 
 class CompatGlacDir:
     def __init__(self, rgiid):
@@ -87,6 +90,9 @@ def single_flowline_glacier_directory(rgi_id, reset=pygem_prms.overwrite_gdirs, 
             cfg.PARAMS['has_internet'] = pygem_prms.has_internet
             gdirs = workflow.init_glacier_directories([rgi_id], from_prepro_level=2, prepro_border=cfg.PARAMS['border'], 
                                                     prepro_base_url=base_url, prepro_rgi_version='62')
+            # add the millan22 thickness and velocity
+            #workflow.execute_entity_task(millan22.velocity_to_gdir, gdirs)
+            workflow.execute_entity_task(millan22.thickness_to_gdir, gdirs)
 
             # Compute all the stuff
             list_tasks = [          
@@ -186,6 +192,9 @@ def single_flowline_glacier_directory_with_calving(rgi_id, reset=pygem_prms.over
         if not gdirs[0].is_tidewater:
             raise ValueError(f'{rgi_id} is not tidewater!')
             
+        # add the millan22 thickness and velocity
+        #workflow.execute_entity_task(millan22.velocity_to_gdir, gdirs)
+        workflow.execute_entity_task(millan22.thickness_to_gdir, gdirs)
         # Compute all the stuff
         list_tasks = [
             # Consensus ice thickness
