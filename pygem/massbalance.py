@@ -144,7 +144,7 @@ class PyGEMMassBalance(MassBalanceModel):
         self.glac_wide_refreeze = np.zeros(self.nmonths)
         self.glac_wide_melt = np.zeros(self.nmonths)
         self.glac_wide_frontalablation = np.zeros(self.nmonths)
-        #self.glac_wide_length_annual = np.zeros(self.nyears+1)
+        self.glac_length_change = np.zeros(self.nmonths)
         self.glac_wide_massbaltotal = np.zeros(self.nmonths)
         self.glac_wide_runoff = np.zeros(self.nmonths)
         self.glac_wide_snowline = np.zeros(self.nmonths)
@@ -276,7 +276,7 @@ class PyGEMMassBalance(MassBalanceModel):
             
             nbins = heights.shape[0]
             nmonths = self.glacier_gcm_temp.shape[0]
-            print('nbins is',nbins,'nmonths is :',nmonths)
+            #print('nbins is',nbins,'nmonths is :',nmonths)
             # Local variables
             bin_precsnow = np.zeros((nbins,nmonths))
 
