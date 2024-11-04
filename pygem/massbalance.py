@@ -876,7 +876,7 @@ class PyGEMMassBalance(MassBalanceModel):
                     ).sum(0))
                 
                 
-    def ensure_mass_conservation(self, diag):
+    def ensure_mass_conservation(self, diag, Dynamic_step_Monthly = True):
         """
         Ensure mass conservation that may result from using OGGM's glacier dynamics model. This will be resolved on an 
         annual basis, and since the glacier dynamics are updated annually, the melt and runoff will be adjusted on a
@@ -889,14 +889,18 @@ class PyGEMMassBalance(MassBalanceModel):
         Note: other dynamical models (e.g., mass redistribution curves, volume-length-area scaling) are based on the 
         total volume change and therefore do not impose limitations like this because they do not estimate the flux
         divergence. As a result, they may systematically overestimate mass loss compared to OGGM's dynamical model.
+
+        Parameters
+        Dynamic_Step_Monthly : bool
+            if True, the dynamic step is monthly, the volume is monthly, need to be calculated as annual
         """
         # Compute difference between volume change 
         vol_change_annual_mbmod = (self.glac_wide_massbaltotal.reshape(-1,12).sum(1) * 
                                    pygem_prms.density_water / pygem_prms.density_ice)
         vol_change_annual_diag = np.zeros(vol_change_annual_mbmod.shape)
         #%% Dynamic running step
-        # if the dynamic step is monthly, the volume is monthly, need to be calculated as annual
-        Dynamic_step_Monthly =True
+        #TODO if the dynamic step is monthly, the volume is monthly, need to be calculated as annual
+        
         if Dynamic_step_Monthly :
             volume_m3_month_ice = diag.volume_m3.values[1:] - diag.volume_m3.values[0:-1] 
             volume_m3_annual_ice = volume_m3_month_ice.reshape(-1,12).sum(1)
