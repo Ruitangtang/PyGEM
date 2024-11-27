@@ -119,7 +119,7 @@ def single_flowline_glacier_directory(rgi_id, reset=pygem_prms.overwrite_gdirs, 
 
 
 def single_flowline_glacier_directory_with_calving(rgi_id, reset=pygem_prms.overwrite_gdirs, 
-                                                   prepro_border=pygem_prms.oggm_border, k_calving=1,
+                                                   prepro_border=pygem_prms.oggm_border, k_calving_str="",
                                                    logging_level=pygem_prms.logging_level, 
                                                    has_internet=pygem_prms.has_internet):
     """Prepare a GlacierDirectory for PyGEM (single flowline to start with)
@@ -167,7 +167,7 @@ def single_flowline_glacier_directory_with_calving(rgi_id, reset=pygem_prms.over
     cfg.PARAMS['dl_verify'] = True
     cfg.PARAMS['use_multiple_flowlines'] = False
     # temporary directory for testing (deleted on computer restart)
-    cfg.PATHS['working_dir'] = pygem_prms.oggm_gdir_fp
+    cfg.PATHS['working_dir'] = pygem_prms.oggm_gdir_fp+k_calving_str
     
     # Check if folder is already processed
     if not reset:
