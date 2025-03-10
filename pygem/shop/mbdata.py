@@ -79,6 +79,7 @@ def mb_df_to_gdir(gdir, mb_dataset='Hugonnet2020'):
         mb_mwea_err = mb_df.loc[rgiid_idx, mberr_cn]
         
         assert mb_clim_cn in mb_df.columns, mb_clim_cn + ' not a column in mb_df'
+        #print("in mb_df_to_gdir, mb_clim_cn is :",mb_clim_cn)
         mb_clim_mwea = mb_df.loc[rgiid_idx, mb_clim_cn]
         mb_clim_mwea_err = mb_df.loc[rgiid_idx, mberr_clim_cn]
         
