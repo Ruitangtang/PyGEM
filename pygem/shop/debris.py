@@ -114,7 +114,7 @@ def debris_to_gdir(gdir, debris_dir=pygem_prms.debris_fp, add_to_gridded=True, h
 
 
 @entity_task(log, writes=['inversion_flowlines'])
-def debris_binned(gdir, ignore_debris=False, fl_str='inversion_flowlines'):
+def debris_binned(gdir, ignore_debris=False, fl_str='inversion_flowlines',filesuffix=''):
     """Bin debris thickness and enhancement factors.
     
     Updates the 'inversion_flowlines' save file.
@@ -123,10 +123,16 @@ def debris_binned(gdir, ignore_debris=False, fl_str='inversion_flowlines'):
     ----------
     gdir : :py:class:`oggm.GlacierDirectory`
         where to write the data
+    ignore_debris : bool
+        option to ignore debris data
+    fl_str : str
+        filename of inversion flowlines
+    filesuffix : str
+        filesuffix for inversion flow
     """
     # Nominal glaciers will throw error, so make sure inversion_flowlines exist
     try:
-        flowlines = gdir.read_pickle(fl_str)
+        flowlines = gdir.read_pickle(fl_str, filesuffix=filesuffix)
         fl = flowlines[0]
         
         assert len(flowlines) == 1, 'Error: binning debris only works for single flowlines at present'
@@ -186,5 +192,5 @@ def debris_binned(gdir, ignore_debris=False, fl_str='inversion_flowlines'):
             fl.debris_ed = np.ones(nbins)
         
         # Overwrite pickle
-        gdir.write_pickle(flowlines, fl_str)
+        gdir.write_pickle(flowlines, fl_str, filesuffix=filesuffix)
         
