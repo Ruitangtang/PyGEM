@@ -318,7 +318,8 @@ def selectglaciersrgitable(glac_no=None, rgi_regionsO1=None, rgi_regionsO2='all'
             csv_regionO1 = pd.read_csv(rgi_fp + rgi_fn)
         except:
             csv_regionO1 = pd.read_csv(rgi_fp + rgi_fn, encoding='latin1')
-            print(traceback.format_exc())
+            print('..latin1 encoding..')
+            #print(traceback.format_exc())
         
         # Populate glacer_table with the glaciers of interest
         if rgi_regionsO2 == 'all' and rgi_glac_number == 'all':
