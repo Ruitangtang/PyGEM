@@ -247,6 +247,13 @@ class PyGEMMassBalance(MassBalanceModel):
             else:
                 print("Please check the fls and fl_id, they should not be None") 
                 print(traceback.format_exc())
+            err_heights = heights - fl.surface_h
+            if max(abs(err_heights)) > 0:
+                print('WARNING: Heights do not match flowline surface heights')
+                print('Heights:', heights)
+                print('Flowline surface heights:', fl.surface_h)
+                print('Max absolute difference:', max(abs(err_heights)))
+                #raise ValueError('Heights do not match flowline surface heights')
             np.testing.assert_allclose(heights, fl.surface_h)
             glacier_area_t0 = fl.widths_m * fl.dx_meter
             glacier_area_initial = self.glacier_area_initial
@@ -289,7 +296,7 @@ class PyGEMMassBalance(MassBalanceModel):
                 refreeze_potential = np.zeros(nbins)
 
             if self.glacier_area_initial.sum() > 0:
-        #        if len(glac_idx_t0) > 0:
+            #        if len(glac_idx_t0) > 0:
 
                 # Surface type [0=off-glacier, 1=ice, 2=snow, 3=firn, 4=debris]
                 if year == 0:
@@ -664,15 +671,15 @@ class PyGEMMassBalance(MassBalanceModel):
                     self._convert_glacwide_results(year, glacier_area_t0, heights, fls=fls, fl_id=fl_id, 
                                                     option_areaconstant=option_areaconstant)
 
-        ##                if debug:
-        #                debug_startyr = 57
-        #                debug_endyr = 61
-        #                if year > debug_startyr and year < debug_endyr:
-        #                    print('\n', year, 'glac_bin_massbalclim:', self.glac_bin_massbalclim[:,12*year:12*(year+1)].sum(1))
-        #                    print('ice thickness:', icethickness_t0)
-        #                    print('heights:', heights[glac_idx_t0])
-        ##                    print('surface type present:', self.glac_bin_surfacetype_annual[12:20,year])
-        ##                    print('surface type updated:', self.surfacetype[12:20])
+            ##                if debug:
+            #                debug_startyr = 57
+            #                debug_endyr = 61
+            #                if year > debug_startyr and year < debug_endyr:
+            #                    print('\n', year, 'glac_bin_massbalclim:', self.glac_bin_massbalclim[:,12*year:12*(year+1)].sum(1))
+            #                    print('ice thickness:', icethickness_t0)
+            #                    print('heights:', heights[glac_idx_t0])
+            ##                    print('surface type present:', self.glac_bin_surfacetype_annual[12:20,year])
+            ##                    print('surface type updated:', self.surfacetype[12:20])
 
             # Mass balance for each bin [m ice per second]
             if year_month is None:
