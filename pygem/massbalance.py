@@ -808,7 +808,8 @@ class PyGEMMassBalance(MassBalanceModel):
                     - self.glac_wide_melt[12*year:12*(year+1)] - self.glac_wide_frontalablation[12*year:12*(year+1)])
             # Glacier-wide climatic mass balance (m3 w.e.)
             self.glac_wide_massbalclim[12*year:12*(year+1)] = (
-                    self.glac_wide_massbaltotal[12*year:12*(year+1)])
+                    self.glac_wide_acc[12*year:12*(year+1)] + self.glac_wide_refreeze[12*year:12*(year+1)]
+                    - self.glac_wide_melt[12*year:12*(year+1)])
 
             # If mass loss more negative than glacier mass, reduce melt so glacier completely melts (no excess)
             if icethickness_t0 is not None and mb_mwea < mb_max_loss:
