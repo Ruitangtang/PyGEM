@@ -192,6 +192,9 @@ def single_flowline_glacier_directory_with_calving(rgi_id, reset=pygem_prms.over
         gdir = workflow.init_glacier_directories([rgi_id], from_prepro_level=2, prepro_border=cfg.PARAMS['border'], 
                                                   prepro_base_url=base_url, prepro_rgi_version='62')[0]
         
+        #TODO: check if the glacier is tidewater, here we assume them to be tidewater whose calving calibarion is being done
+        gdir.is_tidewater = True
+        
         if not gdir.is_tidewater:
             raise ValueError(f'{rgi_id} is not tidewater!')
             
