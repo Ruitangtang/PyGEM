@@ -300,7 +300,7 @@ def selectglaciersrgitable(glac_no=None, rgi_regionsO1=None, rgi_regionsO2='all'
     # Create an empty dataframe
     rgi_regionsO1 = sorted(rgi_regionsO1)
     print('glc_no',glac_no)
-    print('rfp',os.listdir(rgi_fp))
+    #print('rfp',os.listdir(rgi_fp))
     print('rgi_glc_num',rgi_glac_number)
     glacier_table = pd.DataFrame()
     for region in rgi_regionsO1:
@@ -313,7 +313,7 @@ def selectglaciersrgitable(glac_no=None, rgi_regionsO1=None, rgi_regionsO2='all'
         for i in os.listdir(rgi_fp):
             if i.startswith(str(region).zfill(2)) and i.endswith('.csv'):
                 rgi_fn = i
-            print('regs:',i)
+            #print('regs:',i)
         try:
             csv_regionO1 = pd.read_csv(rgi_fp + rgi_fn)
         except:
