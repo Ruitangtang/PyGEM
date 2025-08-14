@@ -322,7 +322,8 @@ def prec_biasadj_opt1(ref_prec, ref_elev, gcm_prec, dates_table_ref, dates_table
             gcm_prec_biasadj[:,gcm_subset_idx_start:gcm_subset_idx_end+1][:,gcm_spinupyears*12:])
     gcm_prec_biasadj_frac = gcm_prec_biasadj_subset.sum(axis=1) / ref_prec_nospinup.sum(axis=1)
     assert np.min(gcm_prec_biasadj_frac) > 0.5 and np.max(gcm_prec_biasadj_frac) < 2, (
-            'Error with gcm precipitation bias adjustment: total ref and gcm prec differ by more than factor of 2')
+            f'Error with gcm precipitation bias adjustment: total ref and gcm prec differ by more than factor of 2.'
+            f' min: {np.min(gcm_prec_biasadj_frac)}, max: {np.max(gcm_prec_biasadj_frac)}')
     assert gcm_prec_biasadj.max() <= 10, 'gcm_prec_adj (precipitation bias adjustment) too high, needs to be modified'
     assert gcm_prec_biasadj.min() >= 0, 'gcm_prec_adj is producing a negative precipitation value'   
     
