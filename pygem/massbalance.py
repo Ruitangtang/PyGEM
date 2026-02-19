@@ -190,11 +190,8 @@ class PyGEMMassBalance(MassBalanceModel):
 
     def get_monthly_mb(self, heights, year=None, fls=None, fl_id=None,
                       debug=False, option_areaconstant=False):
-        print("year in get_monthly_mb is :",year)
         year_floor=np.floor(year)
         month=year-int(year_floor)
-        print("year_floor to get_annual_mb is :",year_floor)
-        print("month to get_annual_mb is :",month)
         mb=self.get_annual_mb(heights=heights, year=year_floor, fls=fls, fl_id=fl_id,
                       debug=debug, option_areaconstant=False, year_month=month)
         
@@ -224,19 +221,6 @@ class PyGEMMassBalance(MassBalanceModel):
         try:
             if self.repeat_period:
                 year = year % (pygem_prms.gcm_endyear - pygem_prms.gcm_startyear)
-            # print("######################### In PyGEMMassBalance get annual mb")
-            # print("fl_id is ",fl_id)
-            # print("fls is ",fls)
-            # print("#########################")
-            # try:
-            #     fls = self.gdir.read_pickle('inversion_flowlines')
-            #     print("######################### 2")
-            #     print("fl_id is ",fl_id)
-            #     print("fls is ",fls)
-            #     print("######################### 2")
-            # except:
-            #     print("**************Something is wrong with the fls read**************")
-            #     print(traceback.format_exc())
                     
             if (fls is not None) and (fl_id is not None):
                 #print("fls and fl_id are not None")
@@ -265,13 +249,6 @@ class PyGEMMassBalance(MassBalanceModel):
                 icethickness_t0[fl_widths_m > 0] = fl_section[fl_widths_m > 0] / fl_widths_m[fl_widths_m > 0]
             else:
                 icethickness_t0 = None
-            #print('******************** attributes of the flowline at the time t0 ******************** ')
-            #print('glacier_area_initial is:',glacier_area_initial)
-            #print('glacier_area_t0 is:',glacier_area_t0)
-            #print('the fl_widths_m at t0 is:',fl_widths_m)
-            #print('the fl_section area at t0 is:',fl_section)
-            #print('the ice thickness at t0 is:',icethickness_t0)
-            # Quality control: ensure you only have glacier area where there is ice
             if icethickness_t0 is not None:
                 glacier_area_t0[icethickness_t0 == 0] = 0
                 
@@ -280,11 +257,9 @@ class PyGEMMassBalance(MassBalanceModel):
             
             # Glacier indices
             glac_idx_t0 = glacier_area_t0.nonzero()[0]
-            #print('the indices of glacier nonzero at t0 is:',glac_idx_t0)
             
             nbins = heights.shape[0]
             nmonths = self.glacier_gcm_temp.shape[0]
-            #print('nbins is',nbins,'nmonths is :',nmonths)
             # Local variables
             bin_precsnow = np.zeros((nbins,nmonths))
 
@@ -671,15 +646,6 @@ class PyGEMMassBalance(MassBalanceModel):
                     self._convert_glacwide_results(year, glacier_area_t0, heights, fls=fls, fl_id=fl_id, 
                                                     option_areaconstant=option_areaconstant)
 
-            ##                if debug:
-            #                debug_startyr = 57
-            #                debug_endyr = 61
-            #                if year > debug_startyr and year < debug_endyr:
-            #                    print('\n', year, 'glac_bin_massbalclim:', self.glac_bin_massbalclim[:,12*year:12*(year+1)].sum(1))
-            #                    print('ice thickness:', icethickness_t0)
-            #                    print('heights:', heights[glac_idx_t0])
-            ##                    print('surface type present:', self.glac_bin_surfacetype_annual[12:20,year])
-            ##                    print('surface type updated:', self.surfacetype[12:20])
 
             # Mass balance for each bin [m ice per second]
             if year_month is None:
@@ -717,19 +683,7 @@ class PyGEMMassBalance(MassBalanceModel):
                 mb_min = np.min(mb[glac_idx_t0])
                 height_max = np.max(heights[glac_idx_t0])
                 mb_filled[(mb_filled==0) & (heights < height_max)] = mb_min
-                
-        #            if year > debug_startyr and year < debug_endyr:
-        #                print('mb_min:', mb_min)
-        #                
-        #        if year > debug_startyr and year < debug_endyr:
-        #            import matplotlib.pyplot as plt
-        #            plt.plot(mb_filled, heights, '.')
-        #            plt.ylabel('Elevation')
-        #            plt.xlabel('Mass balance (mwea)')
-        #            plt.show()
-        #            
-        #            print('mb_filled:', mb_filled)
-            print("**************** get_annual_mb end ****************")        
+                    
             return mb_filled
         except:
             print(traceback.format_exc())
