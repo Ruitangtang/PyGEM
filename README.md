@@ -1,3 +1,34 @@
+# PyGEM_RT — Frontal Ablation Calibration Branch
+
+[![Paper](https://img.shields.io/badge/📄-GMD_Preprint_2026-blue)](https://doi.org/10.5194/egusphere-2026-1081)
+[![DOI](https://img.shields.io/badge/DOI-10.5281/zenodo.18761730-blue.svg)](https://doi.org/10.5281/zenodo.18761730)
+[![GitHub release](https://img.shields.io/github/v/release/Ruitangtang/PyGEM?label=stable&color=blue)](https://github.com/Ruitangtang/PyGEM/releases/tag/v1.0.0-zenodo-pygem-rt)
+
+This branch contains the **PyGEM modifications** used for the frontal ablation calibration study:
+
+> *"Joint Bayesian Calibration of Frontal Ablation and Surface Mass Balance in Global Glacier Models"* (GMD Preprint, 2026)
+
+**Key modifications:**
+- Added monthly mass balance functions and new parameters to `get_annual_mb`
+- Added `volume_m3_annual/month_ice` outputs and `glac_wide_massbalclim` variable in the mass balance class
+- Integrated length change as an extra glacier variable for terminus tracking
+- Refactored calving flowline functions with cleaner workflow logic
+- Custom output handlers to export frontal ablation flux alongside standard mass balance outputs
+
+**Zenodo archive:** [`10.5281/zenodo.18761730`](https://doi.org/10.5281/zenodo.18761730)
+
+**Stable release:** [`v1.0.0-zenodo-pygem-rt`](https://github.com/Ruitangtang/PyGEM/releases/tag/v1.0.0-zenodo-pygem-rt)
+
+🚀 For a complete, lightweight setup with sample data and reproduction notebooks, visit:  
+[`Ruitangtang/frontal-ablation-module`](https://github.com/Ruitangtang/frontal-ablation-module)
+
+**Citation:**
+> [Authors]. *Joint Bayesian Calibration of Frontal Ablation and Surface Mass Balance in Global Glacier Models*. GMD Preprint, 2026. DOI: [`10.5194/egusphere-2026-1081`](https://doi.org/10.5194/egusphere-2026-1081)
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ## Python Glacier Evolution Model (PyGEM)
 
 Overview: Python Glacier Evolution Model (PyGEM) is an open-source glacier evolution model coded in Python that models the transient evolution of glaciers. Each glacier is modeled independently using a monthly timestep. PyGEM has a modular framework that allows different schemes to be used for model calibration or model physics (e.g., climatic mass balance, glacier dynamics).  In the newest version under development, PyGEM is working to become compatible with the Open Global Glacier Model (OGGM; https://oggm.org/).
