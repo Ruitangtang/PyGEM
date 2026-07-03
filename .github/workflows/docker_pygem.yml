@@ -59,6 +59,7 @@ jobs:
           no-cache: true
           file: 'docker/Dockerfile'
           build-args: |
-            PYGEM_BRANCH=${{ github.ref == 'refs/heads/master' && 'master' || 'dev' }}
+            # Map this repo's 'master' branch to 'main' in PyGEM-Community/PyGEM (upstream uses 'main')
+            PYGEM_BRANCH=${{ github.ref == 'refs/heads/master' && 'main' || 'dev' }}
           tags: |
             ghcr.io/pygem-community/pygem:${{ github.ref == 'refs/heads/master' && 'latest' || github.ref == 'refs/heads/dev' && 'dev' }}
