@@ -15,7 +15,7 @@ This branch contains the **PyGEM modifications** used for the frontal ablation c
 - Refactored calving flowline functions with cleaner workflow logic
 - Custom output handlers to export frontal ablation flux alongside standard mass balance outputs
 
-**Full research archive:** [Zenodo concept DOI 10.5281/zenodo.18761729](https://doi.org/10.5281/zenodo.18761729)
+**Full research archive:** [**Zenodo research package — concept DOI 10.5281/zenodo.18761729**](https://doi.org/10.5281/zenodo.18761729)
 
 **Stable release:** [`v1.0.0-zenodo-pygem-rt`](https://github.com/Ruitangtang/PyGEM/releases/tag/v1.0.0-zenodo-pygem-rt)
 
