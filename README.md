@@ -15,15 +15,14 @@ This branch contains the **PyGEM modifications** used for the frontal ablation c
 - Refactored calving flowline functions with cleaner workflow logic
 - Custom output handlers to export frontal ablation flux alongside standard mass balance outputs
 
-**Zenodo archive:** [`10.5281/zenodo.18761730`](https://doi.org/10.5281/zenodo.18761729)
+**Full research archive:** [Zenodo concept DOI 10.5281/zenodo.18761729](https://doi.org/10.5281/zenodo.18761729)
 
 **Stable release:** [`v1.0.0-zenodo-pygem-rt`](https://github.com/Ruitangtang/PyGEM/releases/tag/v1.0.0-zenodo-pygem-rt)
 
-🚀 For a complete, lightweight setup with sample data and reproduction notebooks, visit:  
-[`Ruitangtang/frontal-ablation-module`](https://github.com/Ruitangtang/frontal-ablation-module)
+🚀 Lightweight showcase repo: [**Ruitangtang/frontal-ablation-glacier-demo**](https://github.com/Ruitangtang/frontal-ablation-glacier-demo) — YAML configs, dry-run quickstart commands, tests, method/results visuals, and reproducibility links.
 
 **Citation:**
-> [Authors]. *Joint Bayesian Calibration of Frontal Ablation and Surface Mass Balance in Global Glacier Models*. GMD Preprint, 2026. DOI: [`10.5194/egusphere-2026-1081`](https://doi.org/10.5194/egusphere-2026-1081)
+> Yang et al. *Joint Bayesian Calibration of Frontal Ablation and Surface Mass Balance in Global Glacier Models*. GMD Preprint, 2026. DOI: [`10.5194/egusphere-2026-1081`](https://doi.org/10.5194/egusphere-2026-1081)
 
 
 
