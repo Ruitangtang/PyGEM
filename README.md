@@ -1,7 +1,7 @@
 # PyGEM_RT — Frontal Ablation Calibration Branch
 
 [![Paper](https://img.shields.io/badge/📄-GMD_Preprint_2026-blue)](https://doi.org/10.5194/egusphere-2026-1081)
-[![DOI](https://img.shields.io/badge/DOI-10.5281/zenodo.18761730-blue.svg)](https://doi.org/10.5281/zenodo.18761730)
+[![DOI](https://img.shields.io/badge/DOI-10.5281/zenodo.18761729-blue.svg)](https://doi.org/10.5281/zenodo.18761729)
 [![GitHub release](https://img.shields.io/github/v/release/Ruitangtang/PyGEM?label=stable&color=blue)](https://github.com/Ruitangtang/PyGEM/releases/tag/v1.0.0-zenodo-pygem-rt)
 
 This branch contains the **PyGEM modifications** used for the frontal ablation calibration study:
@@ -15,7 +15,7 @@ This branch contains the **PyGEM modifications** used for the frontal ablation c
 - Refactored calving flowline functions with cleaner workflow logic
 - Custom output handlers to export frontal ablation flux alongside standard mass balance outputs
 
-**Zenodo archive:** [`10.5281/zenodo.18761730`](https://doi.org/10.5281/zenodo.18761730)
+**Zenodo archive:** [`10.5281/zenodo.18761730`](https://doi.org/10.5281/zenodo.18761729)
 
 **Stable release:** [`v1.0.0-zenodo-pygem-rt`](https://github.com/Ruitangtang/PyGEM/releases/tag/v1.0.0-zenodo-pygem-rt)
 
